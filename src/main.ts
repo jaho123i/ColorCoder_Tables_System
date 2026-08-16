@@ -22,8 +22,8 @@ export default class ColorCoderPlugin extends Plugin {
 		// global changes (e.g. deleting a rule) never affect existing boards.
 		try {
 			await this.manager.migrateBoardColorRules();
-		} catch {
-			// Migration failure is non-fatal; boards will use their current rules.
+		} catch (e) {
+			console.error('ColorCoder: color-rule migration failed', e);
 		}
 
 		this.registerView(
@@ -113,28 +113,31 @@ export default class ColorCoderPlugin extends Plugin {
 
 		this.addSettingTab(new ColorCoderSettingTab(this.app, this));
 
-		// Refresh open boards when a task file changes so newly added properties
-		// appear immediately. Board config files are skipped — their own changes
-		// (e.g. schema auto-adoption) don't need a task re-read. Only boards
-		// whose folder (or a subfolder) contains the changed file are refreshed.
+		// Plugin-level fallback: refresh ALL open boards when any task file changes.
+		// Simpler and more reliable than folder matching.
 		const refreshOnTaskChange = (file: TFile) => {
 			if (this.manager.isBoardFile(file)) return;
-			const filePath = file.path;
+			if (!file.path.toLowerCase().endsWith('.md')) return;
 			this.app.workspace.iterateAllLeaves(leaf => {
 				if (leaf.view instanceof ColorCoderView) {
-					const boardFile = (leaf.view as ColorCoderView).getBoardFile();
-					if (!boardFile) return;
-					const folder = (boardFile.parent?.path ?? '') + '/';
-					if (filePath === boardFile.path || filePath.startsWith(folder)) {
-						void (leaf.view as ColorCoderView).refresh();
-					}
+					void (leaf.view as ColorCoderView).refresh();
 				}
 			});
 		};
 		this.registerEvent(this.app.vault.on('modify', refreshOnTaskChange));
 		this.registerEvent(this.app.vault.on('create', refreshOnTaskChange));
-		this.registerEvent(this.app.vault.on('rename', refreshOnTaskChange));
 		this.registerEvent(this.app.vault.on('delete', refreshOnTaskChange));
+		this.registerEvent(this.app.vault.on('rename', (file: TFile, oldPath: string) => {
+			// Handle board file rename
+			this.app.workspace.iterateAllLeaves(leaf => {
+				if (leaf.view instanceof ColorCoderView) {
+					const boardFile = (leaf.view as ColorCoderView).getBoardFile();
+					if (boardFile && oldPath === boardFile.path) {
+						(leaf.view as ColorCoderView).setBoardFile(file);
+					}
+				}
+			});
+		}));
 	}
 
 	onunload() {
