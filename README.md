@@ -1,92 +1,122 @@
-# Obsidian Sample Plugin
+# ColorCoder Tables
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A 2D Kanban/Swimlane task board plugin for Obsidian with Task-as-File architecture, virtual grouping, and dynamic color coding.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+- **Task-as-File Architecture**: Every task is a Markdown file with YAML frontmatter
+- **2D Kanban Board**: Columns + collapsible swimlanes for multi-dimensional visualization
+- **Virtual Grouping**: Group tasks by shared ID values across folders (solves the directory problem)
+- **Dynamic Color Coding**: Visual mapping of colors to priority, time-remaining, and custom properties
+- **Segmented Views**: Split/bucket board segments by project type, duration, or custom criteria
+- **Dark-mode Native Styling**: Matches Notion's aesthetic with Obsidian CSS variables
+- **Notion Import Integration**: Seamless migration from Notion databases
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+## Installation
 
-## First time developing plugins?
+### For users (add to a vault)
 
-Quick starting guide for new plugin devs:
+Copy these 3 built files from the repo into your vault's plugin folder:
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+```
+main.js            → <vault>/.obsidian/plugins/colorcoder-tables/main.js
+manifest.json      → <vault>/.obsidian/plugins/colorcoder-tables/manifest.json
+styles.css         → <vault>/.obsidian/plugins/colorcoder-tables/styles.css
 ```
 
-If you have multiple URLs, you can also do:
+Then enable **ColorCoder Tables** in Obsidian → Settings → Community plugins.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
+### For developers
+
+1. Clone this repository into your Obsidian vault's `.obsidian/plugins/colorcoder-tables` folder
+2. Run `npm install` to install dependencies
+3. Run `npm run build` to build the plugin
+4. Enable "ColorCoder Tables" in Obsidian's Community Plugins settings
+
+## Quick Start
+
+1. **Create a board in the folder you want** — run the command *Create ColorCoder Board* (or right-click a folder → *Create ColorCoder board here*). Pick the folder, and a board file (`<name>-board.md`) is created there. Boards show tasks from that folder **and all subfolders**.
+2. **Add tasks** — open the board, then run *Quick Add Task*: pick the board, give the task a title, status, and priority. Each task is a Markdown file with YAML frontmatter next to the board.
+3. **Move cards** — drag a card between columns to change its status (the file's `status` field updates), or between swimlanes to change its priority.
+4. **Color coding** — configure rules in Settings → ColorCoder Tables: name a property, operator, and value, and cards matching it get your background/text colors.
+5. **Import from Notion** — export a Notion database as **Markdown & CSV**, then run the command *Import Notion Export*. Pick the export folder, then the destination vault folder. Every exported row note with frontmatter becomes a task (its `Status`, `Priority` (`!!!`/`!!`/`!`), and `Time` are mapped to the board's fields; other properties are preserved), database pages are skipped, and a board is created in the destination.
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode (watch)
+npm run dev
+
+# Production build
+npm run build
+
+# Run tests
+npm test
+
+# Lint
+npm run lint
 ```
 
-## API Documentation
+## Project Structure
 
-See https://docs.obsidian.md
+```
+src/
+├── main.ts                 # Plugin entry point
+├── core/                   # Core business logic
+│   ├── ColorCoderManager.ts
+│   ├── VirtualGroupingEngine.ts
+│   ├── ColorCodingEngine.ts
+│   └── SegmentedViewEngine.ts
+├── components/             # React components
+│   ├── ColorCoderView.tsx
+│   ├── BoardColumn.tsx
+│   ├── BoardSwimlane.tsx
+│   ├── BoardCard.tsx
+│   ├── BoardToolbar.tsx
+│   └── BoardSegmentTabs.tsx
+├── hooks/                  # Custom React hooks
+├── types/                  # TypeScript types
+│   ├── task-schema.ts
+│   ├── board-config.ts
+│   └── index.ts
+├── utils/                  # Utility functions
+├── settings/               # Settings UI
+├── core/notion-importer.ts # Notion export → task conversion
+└── modals/                 # Modal dialogs (board picker, quick add, folder picker, Notion import)
+```
+
+## Configuration
+
+Each board is a Markdown file (`<name>-board.md`) whose frontmatter stores the board schema and view settings:
+
+```yaml
+---
+schema: []
+views: [{"id":"default","type":"board","filters":[],"sorts":[],"groupByColumnId":"status","swimlaneColumnId":"priority","boardColumnOrder":["Todo","In Progress","Done"],"boardHideEmpty":false,"boardHideNoValue":false}]
+---
+```
+
+Tasks are Markdown files with frontmatter in the same folder:
+
+```yaml
+---
+id: task-123
+title: Buy milk
+status: todo          # todo | in-progress | done | blocked | cancelled
+priority: high        # low | medium | high | critical
+timeRemaining: < 15 min
+projectId: ""
+tags: []
+dueDate: ""
+assignee: ""
+createdAt: 2026-01-01T00:00:00.000Z
+updatedAt: 2026-01-01T00:00:00.000Z
+---
+```
+
+## License
+
+MIT

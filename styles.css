@@ -1,8 +1,1842 @@
-/*
+/* styles.css - Main stylesheet for ColorCoder plugin
+   Uses Obsidian's theme variables so light/dark mode adapt automatically. */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* ─── Board container ─────────────────────────────────────────── */
 
-If your plugin does not need CSS, delete this file.
+.board-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	background: var(--background-primary);
+	color: var(--text-normal);
+}
 
-*/
+/* ─── Toolbar ─────────────────────────────────────────────────── */
+
+.board-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex: 0 0 auto;
+}
+
+.board-toolbar-title {
+	font-weight: 600;
+	font-size: var(--font-ui-medium);
+	color: var(--text-normal);
+	flex: 1 1 auto;
+}
+
+.board-toolbar-add {
+	cursor: pointer;
+	border-radius: var(--radius-s);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	padding: 4px 10px;
+	font-size: var(--font-ui-small);
+}
+
+.board-toolbar-add:hover {
+	filter: brightness(1.1);
+}
+
+.board-toolbar-pickers {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.board-toolbar-hint {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	font-style: italic;
+	margin-right: 8px;
+}
+
+.cc-customize-hint {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	margin: 4px 0 8px;
+}
+
+/* Inline validation error in the Quick Add modal — red and bold so it can't
+   be missed (paired with a longer Notice). */
+.cc-quickadd-error {
+	color: var(--text-error);
+	font-weight: 600;
+	font-size: var(--font-ui-medium);
+	padding: 8px 10px;
+	margin: 8px 0;
+	border: 1px solid var(--text-error);
+	border-radius: var(--radius-m);
+	background: color-mix(in srgb, var(--text-error) 10%, transparent);
+}
+
+.board-toolbar-pickers select {
+	max-width: 160px;
+}
+
+.board-toolbar-customize {
+	cursor: pointer;
+	border-radius: var(--radius-s);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	padding: 4px 10px;
+	font-size: var(--font-ui-small);
+}
+
+.board-toolbar-customize:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* Compact mode: Customize and Add task collapse to icon-only square buttons.
+   The icon keeps the button's accent color (accent for Add, neutral for
+   Customize) so the toolbar stays readable at a glance. */
+.board-toolbar-customize.is-compact,
+.board-toolbar-add.is-compact {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	flex: 0 0 auto;
+}
+
+.board-toolbar-add.is-compact {
+	background: var(--interactive-accent);
+}
+
+.board-toolbar-customize.is-compact {
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.cc-toolbar-icon {
+	width: 18px;
+	height: 18px;
+	display: block;
+}
+
+/* ─── Hidden (collapsed) columns ─────────────────────────────── */
+
+.board-column.is-hidden {
+	flex: 0 0 64px;
+	min-width: 64px;
+	opacity: 0.55;
+	background: var(--background-secondary);
+}
+
+.board-column.is-hidden .board-column-header {
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 4px;
+	padding: 6px 4px;
+}
+
+.board-column.is-hidden .board-column-title {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 400;
+	writing-mode: vertical-rl;
+	transform: rotate(180deg);
+	white-space: nowrap;
+}
+
+.board-column.is-hidden .board-column-count {
+	display: none;
+}
+
+.board-column-eye {
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	padding: 0;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	/* Square hit area — the eye glyph itself is wider than tall, so without a
+	   fixed box the button renders as a rectangle. */
+	width: 24px;
+	height: 24px;
+	flex: 0 0 24px;
+}
+
+.board-column-eye:hover {
+	color: var(--text-normal);
+}
+
+.board-column-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* ─── Card property fields ───────────────────────────────────── */
+/* Each property sits in its own small pill/rectangle (darker than the card)
+   instead of a horizontal rule separating the fields. */
+
+.board-card-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	margin-top: 6px;
+	font-size: var(--font-ui-smaller);
+	opacity: 0.9;
+}
+
+.board-card-field {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	line-height: 1.3;
+	background: rgba(128, 128, 128, 0.2);
+	border-radius: var(--radius-s);
+	padding: 1px 6px;
+	/* Pills are clickable: they open a small value editor for the property. */
+	cursor: pointer;
+}
+
+/* The pill must stay visible on ANY tile color, including dark ones. A
+   neutral overlay that matches the theme's contrast polarity (dark text on
+   light tiles, light text on dark tiles) keeps the pill readable without
+   fighting the card's computed text color. */
+.theme-light .board-card-field {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .board-card-field {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.theme-light .board-card-field:hover {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .board-card-field:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Field value picker (clicked a property pill) ───────────── */
+/* Minimal popup: just clickable values, nothing else. */
+.cc-value-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 8px 0 4px;
+}
+
+.cc-value-option {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 6px 10px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: var(--font-ui-medium);
+}
+
+.cc-value-option:hover {
+	background: var(--background-modifier-hover);
+}
+
+.cc-value-option.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* Multiselect: checked options get a checkmark. */
+.cc-value-option.is-checked::before {
+	content: '✓ ';
+}
+
+.cc-value-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+}
+
+.board-card-field-name {
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+.board-card-field-value {
+	word-break: break-word;
+}
+
+/* ─── Customize modal ─────────────────────────────────────────── */
+
+.cc-customize-section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* View tab setting groups: each section is a card (same look as the General
+   tab cards) so the tab reads as grouped settings instead of a flat list. */
+.cc-view-card {
+	padding: 8px 12px 12px;
+}
+
+.cc-view-card-title {
+	margin: 0 0 8px;
+	font-size: var(--font-ui-medium);
+}
+
+/* Change summaries in confirm dialogs keep their line breaks. */
+.cc-confirm-message {
+	white-space: pre-line;
+}
+
+.cc-confirm-danger {
+	color: var(--text-error);
+	font-weight: 600;
+	margin: 4px 0 8px;
+}
+
+.cc-customize-section h3 {
+	margin: 0 0 8px;
+	font-size: var(--font-ui-medium);
+}
+
+.cc-customize-order {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 0 0 12px;
+}
+
+.cc-customize-order-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.cc-customize-order-value {
+	flex: 1;
+	font-size: var(--font-ui-small);
+}
+
+.cc-customize-order-row button {
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border-radius: var(--radius-s);
+	padding: 2px 8px;
+	font-size: var(--font-ui-smaller);
+}
+
+.cc-customize-order-row button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.cc-customize-field {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 0;
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
+.board-error {
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.board-error h3 {
+	color: var(--text-error);
+	margin: 0;
+}
+
+.board-error pre {
+	background: var(--background-secondary);
+	padding: 10px;
+	border-radius: var(--radius-s);
+	white-space: pre-wrap;
+	overflow-x: auto;
+	font-size: var(--font-ui-small);
+}
+
+.board-error button {
+	align-self: flex-start;
+}
+
+/* ─── Segment tabs ────────────────────────────────────────────── */
+
+.board-segment-tabs {
+	display: flex;
+	gap: 4px;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	flex: 0 0 auto;
+	overflow-x: auto;
+}
+
+.board-segment-tab {
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	padding: 3px 10px;
+	font-size: var(--font-ui-small);
+	white-space: nowrap;
+}
+
+.board-segment-tab:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.board-segment-tab.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* ─── Columns ─────────────────────────────────────────────────── */
+
+.board-columns {
+	display: flex;
+	gap: 12px;
+	padding: 12px;
+	overflow-x: auto;
+	flex: 1 1 auto;
+	align-items: flex-start;
+}
+
+.board-empty {
+	padding: 24px;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.board-column {
+	flex: 0 0 260px;
+	display: flex;
+	flex-direction: column;
+	max-height: 100%;
+	border-radius: var(--radius-m);
+	border: 1px solid var(--background-modifier-border);
+	/* A faint green tint makes the group panels stand out from the board
+	   background (plain --background-secondary is too close to it). */
+	background: color-mix(in srgb, var(--background-secondary) 90%, #4CAF50 10%);
+}
+
+.board-column-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex: 0 0 auto;
+}
+
+.board-column-title {
+	font-weight: 600;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+.board-column-count {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	border-radius: 999px;
+	padding: 1px 8px;
+}
+
+.board-column-body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+	overflow-y: auto;
+	flex: 1 1 auto;
+	min-height: 60px;
+}
+
+/* Insertion line shown while dragging a card over a column. */
+.board-drop-indicator {
+	height: 3px;
+	border-radius: 2px;
+	background: var(--interactive-accent);
+	box-shadow: 0 0 4px var(--interactive-accent);
+	margin: 1px 0;
+}
+
+/* End-of-column insertion line (after the last card). */
+.board-drop-indicator-end {
+	margin-top: 8px;
+	margin-bottom: 0;
+}
+
+/* Empty column dropzone: fills the column body so there's a target even when
+   the group has no cards. No visible box — just the centered indicator line.
+   Half the height of a typical card so empty groups don't look taller. */
+.board-dropzone-empty {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px;
+}
+
+/* End dropzone: small hit area after the last card to show the insertion
+   line without adding a visible gap. Negative margin pulls it up to overlap
+   the last card's bottom visually. */
+.board-dropzone-end {
+	height: 16px;
+	margin-top: -16px;
+}
+
+/* Header dropzone: wraps the column header so dropping on the title area
+   lands at the bottom of the group. */
+.board-column-header-dropzone {
+	position: relative;
+}
+.board-column-header-dropzone .board-drop-indicator-end {
+	margin-top: 4px;
+	margin-bottom: -4px;
+}
+
+/* Column highlight when a card is dragged over it. */
+.board-column.is-drag-over {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+/* Swimlane highlight when a card is dragged over it. */
+.board-swimlane.is-drag-over > .board-swimlane-header {
+	background: var(--interactive-accent-hover);
+	border-radius: var(--radius-m) var(--radius-m) 0 0;
+}
+
+/* "Show more / Show less" pagination control at the bottom of a column. */
+.board-column-show-more {
+	width: 100%;
+	padding: 6px 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	text-align: center;
+}
+
+.board-column-show-more:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-border);
+}
+
+/* ─── Cards ───────────────────────────────────────────────────── */
+
+.board-card {
+	position: relative;
+	border-radius: var(--radius-s);
+	padding: 8px 10px 9px;
+	cursor: grab;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.board-card:hover {
+	filter: brightness(1.08);
+}
+
+.board-card:active {
+	cursor: grabbing;
+}
+
+.board-card-title {
+	font-size: var(--cc-card-font-size, var(--font-ui-small));
+	word-break: break-word;
+}
+
+/* ─── Swimlanes ───────────────────────────────────────────────── */
+
+.board-swimlanes {
+	flex: 1 1 auto;
+	overflow-y: auto;
+}
+
+.board-swimlane {
+	display: flex;
+	flex-direction: column;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.board-swimlane-header {
+	padding: 6px 12px;
+	background: var(--background-primary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+}
+
+.board-swimlane-header:hover {
+	background: var(--background-modifier-hover);
+}
+
+.board-swimlane.is-hidden .board-swimlane-header {
+	opacity: 0.5;
+	background: var(--background-secondary);
+}
+
+.board-swimlane-name {
+	font-weight: 600;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+.board-swimlane-columns {
+	display: flex;
+	gap: 12px;
+	padding: 12px;
+	overflow-x: auto;
+	align-items: flex-start;
+}
+
+/* ─── Dark mode refinements ───────────────────────────────────── */
+/* Base styles use Obsidian's theme variables and adapt automatically.
+   These overrides polish contrast specifically for dark themes. */
+
+body.theme-dark .board-column {
+	background: color-mix(in srgb, var(--background-secondary) 90%, #4CAF50 10%);
+	border-color: var(--background-modifier-border);
+}
+
+body.theme-dark .board-card {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-dark .board-card:hover {
+	filter: brightness(1.15);
+}
+
+body.theme-dark .board-toolbar {
+	background: var(--background-secondary);
+}
+
+body.theme-dark .board-column-count {
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+}
+
+/* ─── Board picker modal ──────────────────────────────────────── */
+
+.colorcoder-picker-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 10px;
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+
+.colorcoder-picker-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.colorcoder-picker-path {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* ─── Property options editor (settings) ─────────────────────── */
+
+.cc-option-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 4px 0 0 16px;
+}
+
+.cc-option-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.cc-option-value {
+	flex: 1;
+	font-size: var(--font-ui-small);
+}
+
+.cc-option-row button,
+.cc-option-add button {
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	color: var(--text-normal);
+	border-radius: var(--radius-s);
+	padding: 2px 8px;
+	font-size: var(--font-ui-smaller);
+}
+
+.cc-option-add {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.cc-option-input {
+	flex: 1;
+	min-width: 0;
+}
+
+/* ─── Card body "…" indicator ────────────────────────────────── */
+/* Bottom-right, small and slightly highlighted; click opens the preview. */
+
+.board-card-ellipsis {
+	position: absolute;
+	right: 6px;
+	bottom: 3px;
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	font-weight: 700;
+	color: inherit;
+	opacity: 0.9;
+	cursor: pointer;
+	padding: 1px 5px;
+	border-radius: var(--radius-s);
+	background: rgba(0, 0, 0, 0.15);
+	transition: filter 0.15s ease;
+}
+
+.board-card-ellipsis:hover {
+	filter: brightness(1.4);
+}
+
+/* ─── Body preview popup ──────────────────────────────────────── */
+
+.modal.cc-body-preview-modal {
+	max-width: min(480px, 90vw);
+}
+
+.cc-body-preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.cc-body-preview-actions .clickable-icon {
+	display: inline-flex;
+}
+
+.cc-body-preview-body {
+	max-height: 60vh;
+	overflow-y: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: 8px 10px;
+	white-space: pre-wrap;
+	word-break: break-word;
+	font-size: var(--font-ui-small);
+}
+
+.cc-body-preview-body pre {
+	margin: 0;
+	white-space: pre-wrap;
+	font-family: var(--font-text);
+	font-size: var(--font-ui-small);
+}
+
+/* ─── Settings: submenu tabs ─────────────────────────────────── */
+
+.cc-settings-tabs {
+	display: flex;
+	gap: 6px;
+	margin: 8px 0 16px;
+	flex-wrap: wrap;
+}
+
+.cc-settings-tab {
+	padding: 16px 16px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	/* Text 60% bigger than the default button text. */
+	font-size: calc(var(--font-ui-small) * 1.6);
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* "(default)" suffix on the plugin settings tabs: half the title size so the
+   tabs stay compact and the pane never overflows. Vertically centered via
+   flexbox on the parent tab. */
+.cc-tab-suffix {
+	font-size: 0.5em;
+	font-weight: normal;
+	opacity: 0.7;
+}
+
+.cc-settings-tab:hover {
+	background: var(--background-modifier-hover);
+}
+
+.cc-settings-tab.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* Unified action bar for Settings and Customize: right-aligned buttons with
+   a top separator, matching Obsidian's modal-button-container look. */
+.cc-apply-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.cc-apply-bar .setting-item {
+	border: none;
+	padding: 0;
+}
+
+/* In the customize modal, reuse the standard footer but keep the separator. */
+.modal-button-container.cc-apply-bar {
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 0;
+	padding-top: 12px;
+}
+
+/* Split Apply button: main action + expand menu (chevron). */
+.cc-apply-split {
+	display: flex;
+	align-items: stretch;
+	position: relative;
+}
+
+.cc-apply-split .mod-cta {
+	border-radius: var(--radius-m) 0 0 var(--radius-m);
+}
+
+.cc-apply-menu-btn {
+	width: 30px;
+	padding: 0;
+	border: none;
+	border-radius: 0 var(--radius-m) var(--radius-m) 0;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s ease;
+}
+
+.cc-apply-menu-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.cc-apply-menu {
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 4px);
+	display: none;
+	flex-direction: column;
+	min-width: 190px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+	z-index: 100;
+	overflow: hidden;
+}
+
+.cc-apply-menu.is-open {
+	display: flex;
+}
+
+.cc-apply-menu-item {
+	text-align: left;
+	padding: 8px 12px;
+	border: none;
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+}
+
+.cc-apply-menu-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* ─── Settings: unified cards (General / Properties / auto fields) ── */
+/* Every settings row is rendered as the same card the Color Rules editor
+   uses (border + radius + background), so all tabs share one look. */
+
+.cc-settings-card {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: transparent;
+	padding: 4px 10px;
+	margin: 6px 0;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cc-settings-card:hover {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cc-settings-card .setting-item {
+	border: none;
+	padding: 6px 0;
+	/* Obsidian's settings tab paints .setting-item rows with a background
+	   (gray rectangles); our cards inside the modal don't get it, so clear it
+	   explicitly to keep both surfaces identical. */
+	background: transparent;
+}
+
+/* Shrink Obsidian's toggle only ~2–3% inside our settings cards — just
+   enough to sit comfortably next to the description without changing the
+   feel of the native toggle. */
+.cc-settings-card .checkbox-container,
+.cc-customize-pane .checkbox-container {
+	width: 39px;
+	height: 21px;
+	border-radius: 11px;
+	flex: 0 0 39px;
+}
+
+.cc-settings-card .checkbox-container::after,
+.cc-customize-pane .checkbox-container::after {
+	width: 17px;
+	height: 17px;
+	transform: translateX(2px);
+}
+
+.cc-settings-card .checkbox-container.is-enabled::after,
+.cc-customize-pane .checkbox-container.is-enabled::after {
+	transform: translateX(20px);
+}
+
+/* Only on mobile let the control shrink so the toggle can't overlap the
+   description; on PC the control keeps its natural width (a shrunk control
+   made text inputs overlap their descriptions). */
+body.is-mobile .cc-settings-card .setting-item-control,
+body.is-mobile .cc-customize-pane .setting-item-control {
+	min-width: 0;
+}
+
+.cc-auto-fields {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 8px;
+}
+
+/* Pencil button next to the auto-field name (sits right after the label,
+   not at the far end of the row). Square, never stretched by the control. */
+.cc-auto-fields .setting-item-name {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.cc-auto-rename {
+	flex: 0 0 26px;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-auto-rename:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.cc-auto-rename svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ─── Settings: properties table ─────────────────────────────── */
+
+.cc-props-table {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 8px 0 16px;
+}
+
+.cc-props-header {
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: 0 2px;
+}
+
+.cc-props-row {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: transparent;
+	padding: 8px 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cc-props-row:hover {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Hidden properties: shrunk and grayed out so they can be un-hidden. */
+.cc-props-row-hidden {
+	opacity: 0.55;
+	padding: 4px 10px;
+}
+
+.cc-props-row-hidden .cc-props-name,
+.cc-props-row-hidden .dropdown {
+	font-size: var(--font-ui-smaller);
+}
+
+.cc-props-line {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.cc-props-name {
+	flex: 1 1 140px;
+	min-width: 120px;
+}
+
+/* Hide (eye) and Delete (trash) icon buttons on each property row. */
+.cc-prop-hide,
+.cc-prop-remove {
+	flex: 0 0 auto;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-prop-hide:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.cc-prop-remove {
+	color: var(--text-error);
+}
+
+.cc-prop-remove:hover {
+	background: var(--text-error);
+	color: var(--text-on-accent);
+}
+
+.cc-props-name-static {
+	font-weight: 600;
+	flex: 1 1 140px;
+	min-width: 120px;
+}
+
+.cc-props-badge {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	background: var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: 1px 6px;
+}
+
+.cc-props-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	min-width: 60px;
+}
+
+.cc-props-detail {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	word-break: break-word;
+}
+
+/* A little breathing room above the "X files use this property" line. */
+.cc-props-usage {
+	margin-top: 6px;
+}
+
+.cc-props-folder {
+	flex: 1 1 180px;
+	min-width: 120px;
+}
+
+.cc-customize-prop-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.cc-rule-swatch {
+	width: 28px;
+	height: 20px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+}
+
+.cc-rule-column {
+	width: 140px;
+	min-width: 100px;
+}
+
+.cc-rule-value {
+	width: 120px;
+	min-width: 90px;
+}
+
+.cc-rule-priority {
+	width: 70px;
+}
+
+.cc-rule-add {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+	margin-bottom: 16px;
+}
+
+/* Space under the "+ Add property" button so it doesn't sit flush against
+   the Apply bar / tab bottom. */
+.cc-add-property {
+	margin-bottom: 16px;
+}
+
+/* Both Add-rule buttons are purple (cta). */
+.cc-rule-add .mod-cta {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.cc-rule-add .mod-cta:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* ─── Color rule card (modern layout) ─────────────────────────── */
+/* A rule is a card split into header (name + kind), body (the rule's
+   own editor) and footer (Rule priority + Remove, bottom-right). */
+
+.cc-rule-card {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: transparent;
+	overflow: hidden;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cc-rule-card:hover {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cc-rule-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.cc-rule-name {
+	flex: 1 1 140px;
+	min-width: 100px;
+}
+
+/* Segmented Condition | Gradient toggle (borderless — sits directly in the
+   rule header so it reads as one control, not a boxed element). */
+.cc-kind-toggle {
+	display: inline-flex;
+	border: none;
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	flex: 0 0 auto;
+}
+
+.cc-kind-btn {
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	padding: 3px 12px;
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-kind-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.cc-kind-btn.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* Active kind gets a mode-specific color: condition = green,
+   gradient = smooth green gradient, so the active mode reads at a glance.
+   Both buttons always hint their meaning with a little green (muted when
+   inactive, full when active) — explicit hex so they never fall back to gray
+   when a theme omits --color-green/--color-teal. */
+.cc-kind-btn.cc-kind-condition {
+	background: rgba(76, 175, 80, 0.28);
+	color: var(--text-normal);
+}
+
+.cc-kind-btn.cc-kind-condition:hover {
+	background: rgba(76, 175, 80, 0.45);
+	color: var(--text-normal);
+}
+
+.cc-kind-btn.cc-kind-gradient {
+	background: linear-gradient(135deg, rgba(76, 175, 80, 0.28), rgba(38, 166, 154, 0.28));
+	color: var(--text-normal);
+}
+
+.cc-kind-btn.cc-kind-gradient:hover {
+	background: linear-gradient(135deg, rgba(76, 175, 80, 0.45), rgba(38, 166, 154, 0.45));
+	color: var(--text-normal);
+}
+
+.cc-kind-btn.is-active.cc-kind-condition {
+	background: #4CAF50;
+	color: #fff;
+}
+
+.cc-kind-btn.is-active.cc-kind-gradient {
+	background: linear-gradient(135deg, #4CAF50, #26A69A);
+	color: #fff;
+}
+
+/* Delete in the footer — bottom-right, always red (danger). */
+.cc-rule-remove {
+	flex: 0 0 auto;
+	margin-left: auto;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-error);
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-rule-remove:hover {
+	background: var(--text-error);
+	color: var(--text-on-accent);
+}
+
+/* Priority reorder arrows in the rule footer. */
+.cc-rule-order {
+	flex: 0 0 auto;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-rule-order:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.cc-rule-body {
+	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.cc-rule-footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.cc-rule-footer-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* ─── Gradient points table ──────────────────────────────────── */
+
+.cc-gradient-swatch {
+	width: 100%;
+	height: 22px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-ui-smaller);
+}
+
+.cc-gradient-table {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 84px 84px 44px;
+	gap: 6px 8px;
+	align-items: center;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: 8px;
+	background: var(--background-secondary);
+}
+
+/* Rows participate in the table grid directly, so every cell lines up in
+   its column: Value | bg | text | action. */
+.cc-gradient-row {
+	display: contents;
+}
+
+/* Header row labels: column titles ("Value", "bg", "text", …). */
+.cc-gradient-head .cc-gradient-col-label {
+	text-transform: uppercase;
+	font-size: var(--font-ui-smaller);
+	letter-spacing: 0.04em;
+	color: var(--text-faint);
+	align-self: end;
+}
+
+.cc-gradient-value {
+	min-width: 0;
+}
+
+/* Gradient point value: plain editable text, no input container. */
+.cc-gradient-value input.cc-rule-value {
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	padding: 0;
+	width: 100%;
+	font: inherit;
+	color: var(--text-normal);
+}
+
+.cc-gradient-value input.cc-rule-value:hover,
+.cc-gradient-value input.cc-rule-value:focus {
+	border: none;
+	box-shadow: none;
+	background: transparent;
+}
+
+.cc-gradient-badge {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-style: italic;
+	text-align: center;
+	justify-self: center;
+}
+
+.cc-gradient-col-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.cc-gradient-remove {
+	justify-self: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-gradient-remove:hover {
+	background: var(--text-error);
+	color: var(--text-on-accent);
+}
+
+.cc-gradient-add {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 2px;
+}
+
+.cc-gradient-add-btn {
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border-radius: var(--radius-s);
+	padding: 2px 10px;
+	font-size: var(--font-ui-smaller);
+}
+
+.cc-gradient-add-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* Gradient editor description row */
+.cc-gradient-desc {
+	margin-top: 0;
+	font-size: var(--font-ui-smaller);
+}
+
+/* Fixed-width color cell: lock/unlock button + color area of the same
+   size, so toggling never shifts the row layout. */
+.cc-gradient-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	width: 84px;
+	flex: 0 0 84px;
+}
+
+/* Keep Obsidian's ColorComponent (swatch + hex input) inside the fixed cell. */
+.cc-gradient-cell .color-input-wrapper {
+	width: 100%;
+	min-width: 0;
+}
+
+/* Force the picker swatch to the same size as the auto-pick circle so the
+   locked/unlocked states line up exactly. */
+.cc-gradient-cell .color-input-wrapper .color-input-swatch {
+	width: 30px;
+	height: 30px;
+	flex: 0 0 30px;
+}
+
+.cc-gradient-cell .color-input-wrapper input {
+	width: 100%;
+	min-width: 0;
+	padding: 0 4px;
+	font-size: var(--font-ui-smaller);
+}
+
+/* Center the bg/text column titles and their values so the two columns read
+   as straight vertical lines. */
+.cc-gradient-head .cc-gradient-col-label {
+	text-align: center;
+	justify-self: center;
+}
+
+.cc-gradient-cell {
+	justify-content: center;
+}
+
+.cc-gradient-lock-btn {
+	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	cursor: default;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cc-gradient-lock-btn.is-unlocked {
+	color: var(--interactive-accent);
+}
+
+/* No hover highlight on the lock icon while locked; default cursor so the
+   locked state feels inert. */
+.cc-gradient-lock-btn {
+	cursor: default;
+}
+
+.cc-gradient-lock-btn:hover {
+	background: transparent;
+	color: var(--text-muted);
+}
+
+.cc-gradient-lock-btn.is-unlocked {
+	cursor: pointer;
+}
+
+.cc-gradient-lock-btn.is-unlocked:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+/* Auto-pick circle: a round swatch filled with the interpolated color at
+   this point, with a contrasting auto sign on top. No hover effect or
+   pointer cursor while locked, and it matches the picker swatch size. */
+.cc-gradient-auto-btn {
+	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
+	max-width: 30px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	cursor: default;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.cc-option-order {
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Bigger arrow glyphs inside the fixed-size buttons (the icon grows, the
+   button does not). Hide arrows at the ends that do nothing, while keeping
+   their space so the table alignment is preserved. */
+.cc-option-order svg {
+	width: 15px;
+	height: 15px;
+}
+
+.cc-option-order:disabled {
+	visibility: hidden;
+}
+
+.cc-option-sorts {
+	display: inline-flex;
+	gap: 2px;
+}
+
+/* Sort controls row above the values list: 80% of the option value rows'
+   height, with the label + buttons grabbed together and centered in the
+   middle of the pane. */
+.cc-option-sort-row {
+	height: 21px;
+	align-items: center;
+	justify-content: center;
+	/* No gap between the "Auto:" label and the sort buttons. */
+	gap: 2px;
+}
+
+.cc-option-sort-row .cc-props-label {
+	min-width: 0;
+}
+
+.cc-option-sort {
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	border-radius: var(--radius-s);
+	padding: 0;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	/* Rectangles in 3:2 proportion. */
+	width: 32px;
+	height: 21px;
+	font-size: 11px;
+}
+
+.cc-option-sort:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Gradient rule per-value rows: compact bg/text column labels. */
+.cc-gradient-col {
+	min-width: 0;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.cc-customize-prop-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	word-break: break-word;
+}
+
+.cc-customize-prop-row .dropdown {
+	flex: 0 0 auto;
+	max-width: 180px;
+}
+
+/* ─── Mobile / narrow screens ─────────────────────────────────── */
+/* On phones the toolbar must wrap (not overflow off-screen) and respect
+   the device notch / safe area so the pickers and Customize stay visible. */
+
+body.is-mobile .board-toolbar {
+	flex-wrap: wrap;
+	padding-top: 8px;
+	padding-bottom: 6px;
+}
+
+/* Keep the board inside the device safe area so it doesn't slide under the
+   Android status bar or Obsidian's bottom nav. Use Obsidian's own safe-area
+   variables (set on body.is-mobile) rather than the raw CSS env() values. */
+body.is-mobile .board-view {
+	padding-top: var(--safe-area-inset-top);
+	padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* The last swimlane must clear Obsidian's bottom toolbar. Pad the board's
+   own scroll container (the element that actually scrolls) so the toolbar
+   auto-hide detection on the native .view-content still works. */
+body.is-mobile .board-swimlanes,
+body.is-mobile .board-columns {
+	padding-bottom: calc(var(--safe-area-inset-bottom) + 24px);
+}
+
+body.is-mobile .board-toolbar-title {
+	flex: 1 1 100%;
+}
+
+/* The board name is redundant on mobile (the tab title already shows it). */
+body.is-mobile .board-toolbar-title {
+	display: none;
+}
+
+body.is-mobile .board-toolbar-pickers {
+	flex: 1 1 100%;
+}
+
+body.is-mobile .board-toolbar-pickers select {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: none;
+}
+
+body.is-mobile .board-toolbar-customize,
+body.is-mobile .board-toolbar-add {
+	flex: 0 0 auto;
+}
+
+/* Compact mode on mobile: Group by, Swimlane by, Customize and Add task all
+   on ONE line (the title is already hidden on phones). The pickers shrink to
+   share the row with the two icon buttons; overflow-x lets it scroll if the
+   screen is too narrow instead of wrapping. */
+body.is-mobile .board-toolbar.is-compact {
+	flex-wrap: nowrap;
+	overflow-x: auto;
+}
+
+body.is-mobile .board-toolbar.is-compact .board-toolbar-pickers {
+	flex: 1 1 0;
+	flex-wrap: nowrap;
+	min-width: 0;
+}
+
+body.is-mobile .board-toolbar.is-compact .board-toolbar-pickers select {
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: none;
+}
+
+/* ─── Mobile: Customize modal ─────────────────────────────────── */
+/* Tab bar inside the Customize modal: keep all four tabs on one row (shrink
+   instead of wrap). No overflow-x scroll — on mobile a scrollable container
+   can swallow taps on the buttons inside it, which made the tab picker dead.
+   The plugin settings tabs (outside .modal) keep wrapping so their pane is
+   never wider than the screen. */
+body.is-mobile .modal .cc-settings-tabs {
+	flex-wrap: nowrap;
+	touch-action: manipulation;
+}
+
+body.is-mobile .cc-settings-tab {
+	flex: 1 1 0;
+	padding: 2px 6px;
+	font-size: var(--font-ui-smaller);
+	line-height: 1.2;
+	white-space: nowrap;
+	text-align: center;
+	touch-action: manipulation;
+}
+
+/* Setting rows: description and control side by side with a small gap
+   (Obsidian's mobile layout stacks them with a large gap). */
+body.is-mobile .cc-customize-pane .setting-item {
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+}
+
+body.is-mobile .cc-customize-pane .setting-item-info {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+body.is-mobile .cc-customize-pane .setting-item-control {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
+/* Property rows on mobile: hide/remove icons get a fixed comfortable size
+   (stretching to the row height made them tiny on short rows) and sit flush
+   against the right edge. */
+body.is-mobile .cc-prop-hide,
+body.is-mobile .cc-prop-remove {
+	width: 32px;
+	height: 32px;
+	flex: 0 0 32px;
+	align-self: center;
+}
+
+body.is-mobile .cc-prop-hide {
+	margin-left: auto;
+}
+
+/* Apply + Cancel on the same row. */
+body.is-mobile .cc-apply-bar {
+	flex-wrap: nowrap;
+}
+
+body.is-mobile .cc-apply-split .mod-cta {
+	padding: 4px 10px;
+	font-size: var(--font-ui-small);
+}
+
+@media (max-width: 640px) {
+	.board-view {
+		padding-top: var(--safe-area-inset-top);
+		padding-bottom: var(--safe-area-inset-bottom);
+	}
+	/* Our modals (Customize board, field value picker) are full-screen on
+	   phones; pad them by Obsidian's safe-area insets so the title and the
+	   Apply bar clear the notch and the home indicator. */
+	.cc-modal {
+		padding-top: var(--safe-area-inset-top);
+		padding-bottom: var(--safe-area-inset-bottom);
+	}
+	.board-swimlanes,
+	.board-columns {
+		padding-bottom: calc(var(--safe-area-inset-bottom) + 24px);
+	}
+	.board-toolbar {
+		flex-wrap: wrap;
+		padding-top: 8px;
+		padding-bottom: 6px;
+	}
+	.board-toolbar-title {
+		flex: 1 1 100%;
+	}
+	.board-toolbar-pickers {
+		flex: 1 1 100%;
+	}
+	.board-toolbar-pickers select {
+		flex: 1 1 0;
+		min-width: 0;
+		max-width: none;
+	}
+	.board-toolbar-customize,
+	.board-toolbar-add {
+		flex: 0 0 auto;
+	}
+
+	/* Gradient editor on phones: keep the PC-style grid (value | bg | text |
+	   action in one row, columns aligned) but give the value column more room
+	   and larger text so it stays readable. */
+	.cc-gradient-table {
+		grid-template-columns: minmax(0, 1fr) 72px 72px 40px;
+		gap: 6px 6px;
+	}
+	.cc-gradient-value input.cc-rule-value {
+		font-size: var(--font-ui-medium);
+	}
+	.cc-gradient-cell {
+		width: 72px;
+		flex: 0 0 72px;
+	}
+	.cc-gradient-cell .color-input-wrapper input {
+		font-size: var(--font-ui-medium);
+	}
+}
+
+/* Reserve scrollbar space in OUR modals so the layout doesn't shift when a
+   scrollbar appears/disappears as the tab content grows. Scoped to our
+   modals only: applying it to Obsidian's own settings page
+   (.vertical-tab-content-container) narrowed the content by the scrollbar
+   width once the plugin loaded, which pushed a boundary description word
+   onto a new line. */
+.cc-modal .modal-content,
+.cc-body-preview-modal .modal-content {
+	scrollbar-gutter: stable;
+}

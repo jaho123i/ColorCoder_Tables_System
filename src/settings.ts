@@ -1,38 +1,20 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import { PluginSettings } from './types/plugin-settings';
+import { ColorCoderSettingTab } from './components/SettingsTab';
 
-export interface MyPluginSettings {
-	mySetting: string;
-}
+// Export the types that main.ts expects
+export type ColorCoderSettings = PluginSettings;
+export { ColorCoderSettingTab };
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
+export const DEFAULT_SETTINGS: PluginSettings = {
+	databaseFileName: 'ColorCoder-board',
+	defaultBoardConfig: {
+		schema: [],
+		views: [],
+	},
+	colorRules: [],
+	autoUpdateCreatedAt: true,
+	createdAtFieldName: 'Created At',
+	pageSize: 50,
+	colorGroupPanels: false,
+	cardFontSize: 14,
 };
-
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					}),
-			);
-	}
-}
