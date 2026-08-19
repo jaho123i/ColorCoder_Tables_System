@@ -36,10 +36,13 @@ const createMockApp = () => {
 		read: vi.fn(),
 		create: vi.fn(),
 		modify: vi.fn(),
-		trash: vi.fn(),
+	};
+	const fileManager = {
+		trashFile: vi.fn(),
 	};
 	return {
 		vault,
+		fileManager,
 		workspace: {
 			getActiveFile: vi.fn(),
 		},
@@ -273,12 +276,12 @@ describe('TaskFileManager', () => {
 		it('moves file to trash', async () => {
 			const mockFile = new MockTFile('test.md');
 			mockApp.vault.getAbstractFileByPath.mockReturnValue(mockFile);
-			mockApp.vault.trash.mockResolvedValue(undefined);
+			mockApp.fileManager.trashFile.mockResolvedValue(undefined);
 
 			const result = await manager.deleteTask('test.md');
 
 			expect(result.success).toBe(true);
-			expect(mockApp.vault.trash).toHaveBeenCalledWith(mockFile, true);
+			expect(mockApp.fileManager.trashFile).toHaveBeenCalledWith(mockFile);
 		});
 	});
 

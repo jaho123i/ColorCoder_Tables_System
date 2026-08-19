@@ -1,8 +1,9 @@
-import { App, PluginSettingTab, Notice } from 'obsidian';
+import { App, PluginSettingTab, Notice, Setting } from 'obsidian';
 import { ColumnSchema } from '../types/index';
 import { renderColorRulesTab, renderPropertiesTab, renderGeneralTab, preserveScroll } from './shared/property-ui';
 import { PromptModal } from '../modals/PromptModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
+import ColorCoderPlugin from '../main';
 
 const DEFAULT_DATABASE_FILE_NAME = 'ColorCoder-board';
 
@@ -13,13 +14,13 @@ const DEFAULT_PROPERTY: Omit<ColumnSchema, 'id'> = {
 };
 
 export class ColorCoderSettingTab extends PluginSettingTab {
-	plugin: any;
+	plugin: ColorCoderPlugin;
 
 	// Settings are split into submenu tabs; Properties holds the *default*
 	// property definitions that new boards inherit.
 	private activeTab: 'general' | 'properties' | 'colors' = 'general';
 
-	constructor(app: App, plugin: any) {
+	constructor(app: App, plugin: ColorCoderPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -40,7 +41,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 	}
 
 	private renderBody(containerEl: HTMLElement): void {
-		containerEl.createEl('h2', { text: 'ColorCoder Tables' });
+		new Setting(containerEl).setName('ColorCoder Tables').setHeading();
 
 		// ── Submenu tab bar ─────────────────────────────────────
 		const tabs = containerEl.createDiv({ cls: 'cc-settings-tabs' });
@@ -110,7 +111,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 			`Rename ${label} field`,
 			`New frontmatter key for the ${label.toLowerCase()} timestamp.`,
 			currentName,
-			async (newName) => {
+			async (newName): Promise<void> => {
 				if (!newName || newName === currentName) return;
 				// Warn (with a user action) when the new name collides with an
 				// existing property or with the other auto field.
@@ -279,7 +280,7 @@ const adoptedType: ColumnSchema['type'] =
 				this.app,
 				'Apply to ALL boards?',
 				`Override ${count} board${count === 1 ? '' : 's'} with these plugin defaults (schema, view, per-board settings and color rules)? Their current settings will be lost.`,
-				async () => {
+				async (): Promise<void> => {
 					const n = await this.plugin.manager?.applyDefaultsToAllBoards();
 					await this.plugin.saveSettings();
 					this.plugin.refreshAllBoards?.();

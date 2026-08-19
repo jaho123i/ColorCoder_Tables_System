@@ -26,7 +26,7 @@ export class PromptModal extends Modal {
 				.onChange(v => { value = v; }))
 			.addButton(button => button
 				.setButtonText('Cancel')
-				.setWarning()
+				.setDestructive()
 				.onClick(() => this.close()))
 			.addButton(button => button
 				.setButtonText(this.confirmLabel)

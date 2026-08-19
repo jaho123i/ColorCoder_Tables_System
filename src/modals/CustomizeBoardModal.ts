@@ -5,6 +5,7 @@ import { renderPropertiesTab, renderColorRulesTab, renderGeneralTab, preserveScr
 import { resolveGroupField } from '../hooks/useBoardData';
 import { ConfirmModal } from './ConfirmModal';
 import { PromptModal } from './PromptModal';
+import { ColorCoderManager } from '../core/ColorCoderManager';
 
 /** Fallback board file name when the database file name is cleared. */
 const DEFAULT_BOARD_FILE_NAME = 'ColorCoder-board';
@@ -24,7 +25,7 @@ const DEFAULT_BOARD_FILE_NAME = 'ColorCoder-board';
 export class CustomizeBoardModal extends Modal {
 	constructor(
 		app: App,
-		private manager: any,
+		private manager: ColorCoderManager,
 		private boardFile: TFile,
 		private view: ViewConfig,
 		private schema: ColumnSchema[],
@@ -321,19 +322,21 @@ onRemove: (prop) => {
 					refresh: () => renderProps(),
 					autoFields: {
 						createdAt: {
-							enabled: this.manager?.settings?.autoUpdateCreatedAt !== false,
+							enabled: this.manager?.getSettings()?.autoUpdateCreatedAt !== false,
 							fieldName: stagedBoard.createdAtFieldName,
 							onChange: (v) => {
-								if (this.manager?.settings) this.manager.settings.autoUpdateCreatedAt = v;
+								const s = this.manager?.getSettings();
+								if (s) s.autoUpdateCreatedAt = v;
 								this.markDirty();
 							},
 							onRename: (currentName) => this.promptRenameAutoField('createdAt', currentName, stagedBoard, renderProps, boardSchema),
 						},
 						updatedAt: {
-							enabled: this.manager?.settings?.autoUpdateUpdatedAt !== false,
+							enabled: this.manager?.getSettings()?.autoUpdateUpdatedAt !== false,
 							fieldName: stagedBoard.updatedAtFieldName,
 							onChange: (v) => {
-								if (this.manager?.settings) this.manager.settings.autoUpdateUpdatedAt = v;
+								const s = this.manager?.getSettings();
+								if (s) s.autoUpdateUpdatedAt = v;
 								this.markDirty();
 							},
 							onRename: (currentName) => this.promptRenameAutoField('updatedAt', currentName, stagedBoard, renderProps, boardSchema),
@@ -516,7 +519,7 @@ onRemove: (prop) => {
 
 		const overrideAsDefaults = async () => {
 			await applyCurrentBoard();
-			const s = this.manager.settings;
+			const s = this.manager.getSettings();
 			s.defaultBoardConfig = { schema: buildFullSchema(), views: [buildView(this.view)] };
 			s.pageSize = stagedBoard.pageSize;
 			s.colorGroupPanels = stagedBoard.colorGroupPanels;

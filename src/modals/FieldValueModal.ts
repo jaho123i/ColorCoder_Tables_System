@@ -2,6 +2,7 @@ import { App, Modal, Notice, TFile } from 'obsidian';
 import { ColumnSchema } from '../types/index';
 import { TaskFileSchema } from '../types/task-schema';
 import { normalizePropertyValue } from '../core/property-types';
+import { ColorCoderManager } from '../core/ColorCoderManager';
 
 /**
  * Minimal value picker opened by clicking a property pill on a board card:
@@ -13,7 +14,7 @@ export class FieldValueModal extends Modal {
 
 	constructor(
 		app: App,
-		private manager: any,
+		private manager: ColorCoderManager,
 		private boardFile: TFile | null,
 		private task: TaskFileSchema,
 		private prop: ColumnSchema
@@ -31,6 +32,7 @@ export class FieldValueModal extends Modal {
 		const current = this.task[key];
 
 		const apply = (value: unknown) => {
+			if (!this.boardFile) return;
 			const normalized = normalizePropertyValue(value, this.prop.type);
 			void this.manager?.updateTaskField(this.boardFile, this.task._file, key, normalized)
 				.then((ok: boolean) => { if (!ok) new Notice(`Failed to update ${this.prop.name}`); });

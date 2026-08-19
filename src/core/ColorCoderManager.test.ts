@@ -112,7 +112,7 @@ describe('createBoard', () => {
 
 describe('getAvailableProperties', () => {
 	it('collects all non-internal property names from tasks', () => {
-		const manager = new ColorCoderManager({ vault: {} }, 'board.json');
+		const manager = new ColorCoderManager({ vault: {} } as any, 'board.json');
 		const makeTask = (overrides: Partial<TaskFileSchema>): TaskFileSchema => ({
 			_file: 'a.md',
 			_title: 'A',
@@ -136,12 +136,12 @@ describe('getAvailableProperties', () => {
 	});
 
 	it('returns empty for no tasks', () => {
-		const manager = new ColorCoderManager({ vault: {} }, 'board.json');
+		const manager = new ColorCoderManager({ vault: {} } as any, 'board.json');
 		expect(manager.getAvailableProperties([])).toEqual([]);
 	});
 
 	it('omits keys that are empty on every task', () => {
-		const manager = new ColorCoderManager({ vault: {} }, 'board.json');
+		const manager = new ColorCoderManager({ vault: {} } as any, 'board.json');
 		const makeTask = (overrides: Partial<TaskFileSchema>): TaskFileSchema => ({
 			_file: 'a.md',
 			_title: 'A',
@@ -167,7 +167,7 @@ describe('getAvailableProperties', () => {
 	});
 
 	it('hides only the structural canonical keys', () => {
-		const manager = new ColorCoderManager({ vault: {} }, 'board.json');
+		const manager = new ColorCoderManager({ vault: {} } as any, 'board.json');
 		const makeTask = (overrides: Partial<TaskFileSchema>): TaskFileSchema => ({
 			_file: 'a.md',
 			_title: 'A',
@@ -323,7 +323,7 @@ describe('getVaultPropertyStats', () => {
 			'b.md': '---\nStatus: Done\n---\n',
 			'board-board.md': '---\nschema: []\nviews: []\ncolorRules: []\n---\n',
 		});
-		const manager = new ColorCoderManager({ vault }, 'board.json');
+		const manager = new ColorCoderManager({ vault } as any, 'board.json');
 
 		const stats = await manager.getVaultPropertyStats();
 		const keys = stats.map(s => s.key);
@@ -359,7 +359,7 @@ describe('updateViewConfig', () => {
 			cachedRead: () => Promise.resolve(boardContent),
 			modify,
 		};
-		const manager = new ColorCoderManager({ vault }, 'board.json');
+		const manager = new ColorCoderManager({ vault } as any, 'board.json');
 		const updater = (view: ViewConfig): ViewConfig => ({ ...view, groupByColumnId: 'Team' });
 
 		const ok = await manager.updateViewConfig(file as any, updater);
@@ -391,7 +391,7 @@ describe('cleanupRareProperties', () => {
 			'b.md': '---\nStatus: Done\nRareTag: y\n---\n',
 			'c.md': '---\nStatus: To do\n---\n',
 		});
-		const manager = new ColorCoderManager({ vault }, 'board.json');
+		const manager = new ColorCoderManager({ vault } as any, 'board.json');
 
 		const result = await manager.cleanupRareProperties(3);
 
@@ -411,7 +411,7 @@ describe('cleanupRareProperties', () => {
 			'a.md': '---\nStatus: To do\n---\n',
 			'b.md': '---\nStatus: Done\n---\n',
 		});
-		const manager = new ColorCoderManager({ vault }, 'board.json');
+		const manager = new ColorCoderManager({ vault } as any, 'board.json');
 
 		const result = await manager.cleanupRareProperties(2);
 		expect(result.success).toBe(true);

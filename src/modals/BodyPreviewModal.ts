@@ -28,7 +28,7 @@ export class BodyPreviewModal extends Modal {
 		openBtn.addEventListener('click', () => {
 			const file = this.app.vault?.getFileByPath(this.task._file);
 			if (file) {
-				this.app.workspace.getLeaf(false).openFile(file);
+				void this.app.workspace.getLeaf(false).openFile(file);
 				this.close();
 			} else {
 				new Notice('File not found');

@@ -1,4 +1,4 @@
-import { TFile, TFolder } from 'obsidian';
+import { TFile, TFolder, App } from 'obsidian';
 import { BoardConfig, DEFAULT_BOARD_CONFIG, ViewConfig, DEFAULT_VIEW, ColumnSchema } from '../types/index';
 import { TaskFileManager, FieldNames } from './task-file-manager';
 import { PluginSettings } from '../types/plugin-settings';
@@ -43,9 +43,14 @@ export class ColorCoderManager {
 	private readonly taskFileManager: TaskFileManager;
 	private readonly settings: PluginSettings;
 
-	constructor(private app: any, private databaseFileName: string, settings?: PluginSettings) {
+	constructor(private app: App, private databaseFileName: string, settings?: PluginSettings) {
 		this.settings = settings ?? emptySettings();
 		this.taskFileManager = new TaskFileManager({ app, settings: this.settings });
+	}
+
+	/** Access to plugin settings for UI components that need to read/write them. */
+	getSettings(): PluginSettings {
+		return this.settings;
 	}
 
 	/** Resolved database file base name. An empty global setting means "use the
@@ -133,14 +138,16 @@ export class ColorCoderManager {
 		const boards: TFile[] = [];
 		const visit = (folder: TFolder) => {
 			for (const child of folder.children) {
-				if ((child as TFile).extension === 'md' && this.isBoardFile(child as TFile)) {
-					boards.push(child as TFile);
-				} else if ((child as TFolder).children) {
+				// Duck-typing: check for TFile-like properties (extension, path) instead of instanceof
+				// This works with both real Obsidian objects and test mocks.
+				if (child && typeof child === 'object' && 'extension' in child && child.extension === 'md' && 'path' in child) {
+					if (this.isBoardFile(child as TFile)) boards.push(child as TFile);
+				} else if (child && typeof child === 'object' && 'children' in child && Array.isArray((child as TFolder).children)) {
 					visit(child as TFolder);
 				}
 			}
 		};
-		const root = this.app.vault.getRoot() as TFolder;
+		const root = this.app.vault.getRoot();
 		visit(root);
 		return boards;
 	}
@@ -168,7 +175,10 @@ export class ColorCoderManager {
 			result.data = result.data.filter(t => {
 				if (t._file === file.path) return false;
 				const f = this.app.vault.getFileByPath?.(t._file) ?? this.app.vault.getAbstractFileByPath?.(t._file);
-				return f && (f as TFile).extension === 'md' ? !this.isBoardFile(f as TFile) : true;
+				// Duck-typing: check for TFile-like properties instead of instanceof
+				return f && typeof f === 'object' && 'extension' in f && f.extension === 'md' && 'path' in f
+					? !this.isBoardFile(f as TFile)
+					: true;
 			});
 			// Auto-adopt any newly detected task properties into the board schema
 			// so they get typed, appear in Quick Add, and persist.
@@ -375,8 +385,9 @@ export class ColorCoderManager {
 			string,
 			{ key: string; count: number; values: Set<string>; type: string }
 		>();
+		const configDir = this.app.vault.configDir;
 		const files = (this.app.vault.getMarkdownFiles?.() ?? []).filter(
-			(f: TFile) => !f.path.includes('/.obsidian/') && !this.isBoardFile(f)
+			(f: TFile) => !f.path.includes(configDir) && !this.isBoardFile(f)
 		);
 
 		const noteValue = (value: unknown): string => {
@@ -551,7 +562,7 @@ function emptySettings(): PluginSettings {
 function isEmptyValue(value: unknown): boolean {
 	if (value === undefined || value === null || value === '') return true;
 	if (Array.isArray(value)) return value.length === 0;
-	if (typeof value === 'object') return Object.keys(value as object).length === 0;
+	if (typeof value === 'object') return Object.keys(value).length === 0;
 	return false;
 }
 
@@ -579,7 +590,7 @@ export function serializeBoardConfig(config: BoardConfig): string {
 	return lines.join('\n');
 }
 
-export async function deserializeBoardConfig(vault: any, file: TFile): Promise<BoardConfig> {
+export async function deserializeBoardConfig(vault: { cachedRead: (file: TFile) => Promise<string> }, file: TFile): Promise<BoardConfig> {
 	return Promise.resolve(vault.cachedRead(file)).then((content: string) => {
 		const match = content.match(/^---\n([\s\S]*?)\n---/);
 		if (!match) return DEFAULT_BOARD_CONFIG;

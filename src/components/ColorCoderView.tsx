@@ -1,4 +1,4 @@
-import { TFile, WorkspaceLeaf, View } from 'obsidian';
+import { TFile, WorkspaceLeaf, View, App } from 'obsidian';
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { TaskFileSchema } from '../types/task-schema';
@@ -11,11 +11,12 @@ import { QuickAddModal } from '../modals/QuickAddModal';
 import { BodyPreviewModal } from '../modals/BodyPreviewModal';
 import { FieldValueModal } from '../modals/FieldValueModal';
 import { inferPropertyType } from '../core/property-types';
+import ColorCoderPlugin from '../main';
 
 export const VIEW_TYPE_COLORCODER = 'colorcoder-view';
 
 export class ColorCoderView extends View {
-	app: any;
+	app: App;
 	icon: string = 'table';
 
 	private root: Root | null = null;
@@ -28,7 +29,7 @@ export class ColorCoderView extends View {
 	/** Capacitor back-button listener (Android system back); removed on close. */
 	private capacitorBackListener: { remove: () => void } | null = null;
 
-	constructor(leaf: WorkspaceLeaf, private plugin: any) {
+	constructor(leaf: WorkspaceLeaf, private plugin: ColorCoderPlugin) {
 		super(leaf);
 		this.app = plugin?.app ?? null;
 	}
@@ -268,10 +269,9 @@ export class ColorCoderView extends View {
 			// (which fires alongside our Capacitor listener).
 			await leaf.setViewState(
 				{ type: VIEW_TYPE_COLORCODER, state: { boardFilePath: this.boardFile?.path ?? null } },
-				{},
 				{ history: true }
 			);
-			await leaf.openFile(file, { history: true });
+			await leaf.openFile(file);
 			this.taskLeaves.push(leaf);
 			history.pushState({ colorcoder: 'task' }, '');
 		}
@@ -284,7 +284,7 @@ export class ColorCoderView extends View {
 
 	/** Edit a card property's value inline (clicked a pill on the tile). */
 	private openFieldValue(task: TaskFileSchema, field: string, config: BoardConfig): void {
-		if (!this.app) return;
+		if (!this.app || !this.boardFile) return;
 		// Board schema wins (type + options); otherwise infer the type from the
 		// current value so the editor still picks the right control.
 		const prop =
@@ -338,12 +338,13 @@ export class ColorCoderView extends View {
 					onGroupByChange: (property: string) => void this.handleGroupByChange(property),
 					onSwimlaneByChange: (property: string) => void this.handleSwimlaneByChange(property),
 					onToggleColumnHidden: (columnId: string) => void this.handleToggleColumnHidden(columnId),
-					onCustomize: () => this.openCustomize(),
-					onAddTask: () => this.openQuickAdd(config),
+					onCustomize: () => void this.openCustomize(),
+					onAddTask: () => void this.openQuickAdd(config),
 					onCardClick: (task: TaskFileSchema) => void this.openTaskFile(task),
-					onBodyPreview: (task: TaskFileSchema) => this.openBodyPreview(task),
-					onFieldClick: (task: TaskFileSchema, field: string) => this.openFieldValue(task, field, config),
+					onBodyPreview: (task: TaskFileSchema) => void this.openBodyPreview(task),
+					onFieldClick: (task: TaskFileSchema, field: string) => void this.openFieldValue(task, field, config),
 					onMoveTask: async (taskFile: string, toColumnId: string, beforeTaskFile?: string | null, swimlaneId?: string) => {
+						if (!this.boardFile) return;
 						// Column ids are `${groupByField}:${value}`; write the target
 						// value to the same field that produced the column.
 						let field = groupByColumnId;

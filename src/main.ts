@@ -120,7 +120,7 @@ export default class ColorCoderPlugin extends Plugin {
 			if (!file.path.toLowerCase().endsWith('.md')) return;
 			this.app.workspace.iterateAllLeaves(leaf => {
 				if (leaf.view instanceof ColorCoderView) {
-					void (leaf.view as ColorCoderView).refresh();
+					void leaf.view.refresh();
 				}
 			});
 		};
@@ -131,9 +131,9 @@ export default class ColorCoderPlugin extends Plugin {
 			// Handle board file rename
 			this.app.workspace.iterateAllLeaves(leaf => {
 				if (leaf.view instanceof ColorCoderView) {
-					const boardFile = (leaf.view as ColorCoderView).getBoardFile();
+					const boardFile = leaf.view.getBoardFile();
 					if (boardFile && oldPath === boardFile.path) {
-						(leaf.view as ColorCoderView).setBoardFile(file);
+						void leaf.view.setBoardFile(file);
 					}
 				}
 			});
@@ -160,7 +160,7 @@ export default class ColorCoderPlugin extends Plugin {
 	refreshAllBoards() {
 		this.app.workspace.iterateAllLeaves(leaf => {
 			if (leaf.view instanceof ColorCoderView) {
-				void (leaf.view as ColorCoderView).refresh();
+				void leaf.view.refresh();
 			}
 		});
 	}

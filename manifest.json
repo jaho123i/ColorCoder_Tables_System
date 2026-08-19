@@ -1,7 +1,7 @@
 {
 	"id": "colorcoder-tables",
 	"name": "ColorCoder Tables",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.8.7",
 	"description": "2D Kanban/Swimlane task board with Task-as-File architecture, virtual grouping, and dynamic color coding.",
 	"author": "jaho123i",

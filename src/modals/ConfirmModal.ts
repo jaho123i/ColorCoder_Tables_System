@@ -33,7 +33,7 @@ export class ConfirmModal extends Modal {
 		new Setting(contentEl)
 			.addButton(button => button
 				.setButtonText('Cancel')
-				.setWarning()
+				.setDestructive()
 				.onClick(() => {
 					this.close();
 					this.onCancel?.();

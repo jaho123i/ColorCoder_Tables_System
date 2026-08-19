@@ -436,7 +436,7 @@ export class TaskFileManager {
 				return { success: false, error: new Error(`File not found: ${filePath}`) };
 			}
 
-			await this.vault.trash(toTFile(file), true);
+			await this.app.fileManager.trashFile(toTFile(file));
 			return { success: true, data: undefined };
 		} catch (error) {
 			return { success: false, error: error as Error };
@@ -450,7 +450,8 @@ export class TaskFileManager {
 	 */
 	async cleanupRareProperties(minUses: number = 10): Promise<Result<Record<string, number>>> {
 		try {
-			const files = (this.vault.getMarkdownFiles?.() ?? []).filter(f => !f.path.includes('/.obsidian/'));
+			const configDir = this.vault.configDir;
+			const files = (this.vault.getMarkdownFiles?.() ?? []).filter(f => !f.path.includes(configDir));
 			const names = defaultFieldNames(this.settings);
 			const counts = new Map<string, number>();
 			const parsed = new Map<string, { file: TFile; fm: TaskFileFrontmatter; body: string }>();
@@ -499,8 +500,9 @@ export class TaskFileManager {
 		try {
 			const folder = this.app.vault.getAbstractFileByPath(folderPath);
 			if (!folder || !isFolder(folder)) return { success: true, data: 0 };
+			const configDir = this.vault.configDir;
 			const files = this.collectMarkdownFiles(toTFolder(folder), true)
-				.filter(f => !f.path.includes('/.obsidian/'));
+				.filter(f => !f.path.includes(configDir));
 			let removed = 0;
 			for (const file of files) {
 				const content = await this.vault.read(file);
@@ -600,7 +602,7 @@ export class TaskFileManager {
 function sanitizeFileName(name: string): string {
 	// Remove control characters, filesystem-forbidden chars, and leading/trailing dots/spaces.
 	const cleaned = name
-		// eslint-disable-next-line no-control-regex
+		// eslint-disable-next-line no-control-regex -- control chars must be stripped for valid filenames
 		.replace(/[\x00-\x1F\x7F]/g, '') // control chars
 		.replace(/[\\/:*?"<>|#^[\]]/g, '') // filesystem forbidden
 		.replace(/^\.+/, '') // leading dots

@@ -900,14 +900,14 @@ function renderGradientEditor(
 		// Re-color every auto circle to the current interpolated color.
 		for (const c of autoCircles) {
 			const col = c.getColor();
-			c.el.setAttribute('style', `background:${col};color:${contrastColor(col)}`);
+			c.el.setCssStyles({ background: col, color: contrastColor(col) });
 		}
 		if (values.length < 2) {
-			preview.setAttribute('style', 'background:transparent;color:var(--text-muted)');
+			preview.setCssStyles({ background: 'transparent', color: 'var(--text-muted)' });
 			return;
 		}
 		const stops = values.map((_, i) => colorAt(i, 'color', 'auto'));
-		preview.setAttribute('style', `background:linear-gradient(90deg, ${stops.join(', ')});color:#fff`);
+		preview.setCssStyles({ background: `linear-gradient(90deg, ${stops.join(', ')})`, color: '#fff' });
 	};
 
 	renderPoints();

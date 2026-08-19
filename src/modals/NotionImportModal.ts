@@ -1,6 +1,7 @@
 import { App, Modal, Notice, TFolder, TFile } from 'obsidian';
 import { FolderPickerModal } from './FolderPickerModal';
 import { parseNotionTask } from '../core/notion-importer';
+import { ColorCoderManager } from '../core/ColorCoderManager';
 
 /**
  * Import a Notion Markdown export into a ColorCoder board.
@@ -13,7 +14,7 @@ import { parseNotionTask } from '../core/notion-importer';
  *  4. A board file is created in the destination folder.
  */
 export class NotionImportModal extends Modal {
-	constructor(app: App, private manager: any) {
+	constructor(app: App, private manager: ColorCoderManager) {
 		super(app);
 	}
 

@@ -3,11 +3,12 @@ import { ColumnSchema } from '../types/index';
 import { FieldNames } from '../core/task-file-manager';
 import { normalizePropertyValue } from '../core/property-types';
 import { ConfirmModal } from './ConfirmModal';
+import { ColorCoderManager } from '../core/ColorCoderManager';
 
 export class QuickAddModal extends Modal {
 	constructor(
 		app: App,
-		private manager: any,
+		private manager: ColorCoderManager,
 		private boardFile: TFile,
 		private schema: ColumnSchema[],
 		private properties: string[] = [],
