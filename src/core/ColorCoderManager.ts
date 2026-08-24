@@ -78,7 +78,7 @@ export class ColorCoderManager {
 		const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder | null;
 		if (!folder || !folder.children) return null;
 		const board = folder.children.find(
-			(child: any) => child.extension === 'md' && this.isBoardFile(child)
+			(child: { extension?: string; path?: string }) => child.extension === 'md' && this.isBoardFile(child as TFile)
 		) as TFile | undefined;
 		return board ?? null;
 	}
@@ -136,14 +136,17 @@ export class ColorCoderManager {
 
 	getAllBoards(): TFile[] {
 		const boards: TFile[] = [];
+		const isTFile = (obj: unknown): obj is TFile =>
+			obj !== null && typeof obj === 'object' && 'extension' in obj && (obj as Record<string, unknown>).extension === 'md' && 'path' in obj;
+		const isTFolder = (obj: unknown): obj is TFolder =>
+			obj !== null && typeof obj === 'object' && 'children' in obj && Array.isArray((obj as Record<string, unknown>).children);
+
 		const visit = (folder: TFolder) => {
 			for (const child of folder.children) {
-				// Duck-typing: check for TFile-like properties (extension, path) instead of instanceof
-				// This works with both real Obsidian objects and test mocks.
-				if (child && typeof child === 'object' && 'extension' in child && child.extension === 'md' && 'path' in child) {
-					if (this.isBoardFile(child as TFile)) boards.push(child as TFile);
-				} else if (child && typeof child === 'object' && 'children' in child && Array.isArray((child as TFolder).children)) {
-					visit(child as TFolder);
+				if (isTFile(child)) {
+					if (this.isBoardFile(child)) boards.push(child);
+				} else if (isTFolder(child)) {
+					visit(child);
 				}
 			}
 		};
@@ -175,10 +178,9 @@ export class ColorCoderManager {
 			result.data = result.data.filter(t => {
 				if (t._file === file.path) return false;
 				const f = this.app.vault.getFileByPath?.(t._file) ?? this.app.vault.getAbstractFileByPath?.(t._file);
-				// Duck-typing: check for TFile-like properties instead of instanceof
-				return f && typeof f === 'object' && 'extension' in f && f.extension === 'md' && 'path' in f
-					? !this.isBoardFile(f as TFile)
-					: true;
+				const isTFile = (obj: unknown): obj is TFile =>
+					obj !== null && typeof obj === 'object' && 'extension' in obj && (obj as Record<string, unknown>).extension === 'md' && 'path' in obj;
+				return f && isTFile(f) ? !this.isBoardFile(f) : true;
 			});
 			// Auto-adopt any newly detected task properties into the board schema
 			// so they get typed, appear in Quick Add, and persist.
@@ -346,9 +348,14 @@ export class ColorCoderManager {
 	private collectMarkdownFiles(folder: TFolder | null): TFile[] {
 		if (!folder) return [];
 		const files: TFile[] = [];
+		const isTFile = (obj: unknown): obj is TFile =>
+			obj !== null && typeof obj === 'object' && 'extension' in obj && (obj as Record<string, unknown>).extension === 'md' && 'path' in obj;
+		const isTFolder = (obj: unknown): obj is TFolder =>
+			obj !== null && typeof obj === 'object' && 'children' in obj && Array.isArray((obj as Record<string, unknown>).children);
+
 		for (const child of folder.children) {
-			if ((child as TFile).extension === 'md') files.push(child as TFile);
-			else if ((child as TFolder).children) files.push(...this.collectMarkdownFiles(child as TFolder));
+			if (isTFile(child)) files.push(child);
+			else if (isTFolder(child)) files.push(...this.collectMarkdownFiles(child));
 		}
 		return files;
 	}

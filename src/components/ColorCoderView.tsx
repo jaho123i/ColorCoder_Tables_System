@@ -88,7 +88,7 @@ export class ColorCoderView extends View {
 		this.registerDomEvent(window, 'popstate', () => {
 			this.closeTaskTab();
 		});
-		const capacitorApp = (window as any)?.Capacitor?.Plugins?.App;
+		const capacitorApp = (window as unknown as { Capacitor?: { Plugins?: { App?: { addListener: (event: string, callback: () => void) => { remove: () => void } } } } })?.Capacitor?.Plugins?.App;
 		if (capacitorApp?.addListener) {
 			this.capacitorBackListener = capacitorApp.addListener('backButton', () => {
 				this.closeTaskTab();
@@ -129,7 +129,7 @@ export class ColorCoderView extends View {
 		};
 	}
 
-	async setState(state: any, _result?: any): Promise<void> {
+	async setState(state: { boardFilePath?: string | null } | null | undefined, _result?: unknown): Promise<void> {
 		if (state?.boardFilePath) {
 			const file = this.app?.vault?.getFileByPath(state.boardFilePath) ?? null;
 			if (file) await this.setBoardFile(file);
@@ -343,8 +343,8 @@ export class ColorCoderView extends View {
 					onCardClick: (task: TaskFileSchema) => void this.openTaskFile(task),
 					onBodyPreview: (task: TaskFileSchema) => void this.openBodyPreview(task),
 					onFieldClick: (task: TaskFileSchema, field: string) => void this.openFieldValue(task, field, config),
-					onMoveTask: async (taskFile: string, toColumnId: string, beforeTaskFile?: string | null, swimlaneId?: string) => {
-						if (!this.boardFile) return;
+					onMoveTask: async (taskFile: string, toColumnId: string, beforeTaskFile?: string | null, swimlaneId?: string): Promise<void> => {
+						if (!this.boardFile || !manager) return;
 						// Column ids are `${groupByField}:${value}`; write the target
 						// value to the same field that produced the column.
 						let field = groupByColumnId;
@@ -369,62 +369,61 @@ export class ColorCoderView extends View {
 								swimlaneValue = swimlaneId.slice(swimlaneId.indexOf(':') + 1);
 							}
 						}
-						if (manager) {
-							// Persist per-group card order: remove the task from every
-							// group's order, then insert it before the drop target (or
-							// at the bottom when dropped on the header/empty space).
-							const order = { ...(this.currentView.boardTaskOrder ?? {}) };
-							for (const key of Object.keys(order)) {
-								order[key] = order[key].filter(f => f !== taskFile);
-							}
-							// Seed the target column's order with every task currently
-							// in it, so the drop position resolves even when the target
-							// card was never explicitly ordered (otherwise indexOf
-							// returns -1 and the card lands at the bottom).
-							const inColumn = this.tasks
-								.filter(t => {
-									const v = t[field];
-									return value === ''
-										? (v === undefined || v === null || v === '')
-										: String(v) === value;
-								})
-								.map(t => t._file);
-							const current = order[toColumnId] ?? [];
-							const full = [...current, ...inColumn.filter(f => !current.includes(f))];
-							const idx = beforeTaskFile ? full.indexOf(beforeTaskFile) : -1;
-							order[toColumnId] =
-								idx >= 0
-									? [...full.slice(0, idx), taskFile, ...full.slice(idx)]
-									: [...full, taskFile];
-							// Optimistic local update: modify the task in-memory so the
-							// board re-renders instantly without a full reload.
-							const taskIdx = this.tasks.findIndex(t => t._file === taskFile);
-							if (taskIdx >= 0) {
-								const updatedTask = { ...this.tasks[taskIdx] };
-								updatedTask[field] = value;
-								if (swimlaneField && swimlaneValue !== undefined) {
-									updatedTask[swimlaneField] = swimlaneValue;
-								}
-								this.tasks[taskIdx] = updatedTask;
-							}
-							// Update local view config for immediate re-render.
-							this.currentView = { ...this.currentView, boardTaskOrder: order };
-							// Persist to disk — AWAIT the field updates so the optimistic
-							// state doesn't get reverted by a re-render before the write completes.
-							await manager.updateViewConfig(this.boardFile, (v: ViewConfig) => ({
-								...v,
-								boardTaskOrder: order,
-							}));
-							await manager.updateTaskField(this.boardFile, taskFile, field, value);
-							if (swimlaneField && swimlaneValue !== undefined) {
-								await manager.updateTaskField(this.boardFile, taskFile, swimlaneField, swimlaneValue);
-							}
-							// Re-render with updated local state.
-							this.renderBoard(this.currentConfig);
+						// Persist per-group card order: remove the task from every
+						// group's order, then insert it before the drop target (or
+						// at the bottom when dropped on the header/empty space).
+						const order = { ...(this.currentView.boardTaskOrder ?? {}) };
+						for (const key of Object.keys(order)) {
+							order[key] = order[key].filter(f => f !== taskFile);
 						}
+						// Seed the target column's order with every task currently
+						// in it, so the drop position resolves even when the target
+						// card was never explicitly ordered (otherwise indexOf
+						// returns -1 and the card lands at the bottom).
+						const inColumn = this.tasks
+							.filter(t => {
+								const v = t[field];
+								return value === ''
+									? (v === undefined || v === null || v === '')
+									: String(v) === value;
+							})
+							.map(t => t._file);
+						const current = order[toColumnId] ?? [];
+						const full = [...current, ...inColumn.filter(f => !current.includes(f))];
+						const idx = beforeTaskFile ? full.indexOf(beforeTaskFile) : -1;
+						order[toColumnId] =
+							idx >= 0
+								? [...full.slice(0, idx), taskFile, ...full.slice(idx)]
+								: [...full, taskFile];
+						// Optimistic local update: modify the task in-memory so the
+						// board re-renders instantly without a full reload.
+						const taskIdx = this.tasks.findIndex(t => t._file === taskFile);
+						if (taskIdx >= 0) {
+							const updatedTask = { ...this.tasks[taskIdx] };
+							updatedTask[field] = value;
+							if (swimlaneField && swimlaneValue !== undefined) {
+								updatedTask[swimlaneField] = swimlaneValue;
+							}
+							this.tasks[taskIdx] = updatedTask;
+						}
+						// Update local view config for immediate re-render.
+						this.currentView = { ...this.currentView, boardTaskOrder: order };
+						// Persist to disk — AWAIT the field updates so the optimistic
+						// state doesn't get reverted by a re-render before the write completes.
+						await manager.updateViewConfig(this.boardFile, (v: ViewConfig) => ({
+							...v,
+							boardTaskOrder: order,
+						}));
+						await manager.updateTaskField(this.boardFile, taskFile, field, value);
+						if (swimlaneField && swimlaneValue !== undefined) {
+							await manager.updateTaskField(this.boardFile, taskFile, swimlaneField, swimlaneValue);
+						}
+						// Re-render with updated local state.
+						this.renderBoard(this.currentConfig);
 					},
-				})
-			)
-		);
+			}
+		)
+		)
+	);
 	}
 }

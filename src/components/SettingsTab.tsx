@@ -41,7 +41,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 	}
 
 	private renderBody(containerEl: HTMLElement): void {
-		new Setting(containerEl).setName('ColorCoder Tables').setHeading();
+		new Setting(containerEl).setName('Tables').setHeading();
 
 		// ── Submenu tab bar ─────────────────────────────────────
 		const tabs = containerEl.createDiv({ cls: 'cc-settings-tabs' });

@@ -264,7 +264,7 @@ export interface InlineFieldMeta {
 }
 
 export interface NoteRow {
-	_file: any;
+	_file: string;
 	_title: string;
 	_inlineFields?: Record<string, InlineFieldMeta>;
 	[key: string]: unknown;

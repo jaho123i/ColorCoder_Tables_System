@@ -112,7 +112,7 @@ export class CustomizeBoardModal extends Modal {
 			showPane();
 		};
 		const onTabEvent = (e: Event) => {
-			const btn = (e.target as HTMLElement).closest('.cc-settings-tab') as HTMLElement | null;
+			const btn = (e.target instanceof HTMLElement ? e.target.closest('.cc-settings-tab') : null) as HTMLElement | null;
 			if (btn?.dataset.tab) activate(btn.dataset.tab);
 		};
 		tabs.addEventListener('pointerdown', onTabEvent);
