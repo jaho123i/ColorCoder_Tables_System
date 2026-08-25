@@ -174,10 +174,12 @@ export default class ColorCoderPlugin extends Plugin {
 			return;
 		}
 
-		new ColorCoderPickerModal(this.app, boards, async file => {
-			const config = await this.manager.readConfig(file);
-			const fieldNames = await this.manager.getEffectiveFieldNames(file, config);
-			new QuickAddModal(this.app, this.manager, file, config.schema, undefined, fieldNames).open();
+		new ColorCoderPickerModal(this.app, boards, file => {
+			void (async () => {
+				const config = await this.manager.readConfig(file);
+				const fieldNames = await this.manager.getEffectiveFieldNames(file, config);
+				new QuickAddModal(this.app, this.manager, file, config.schema, undefined, fieldNames).open();
+			})();
 		}).open();
 	}
 

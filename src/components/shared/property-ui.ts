@@ -178,9 +178,11 @@ export function renderPropertyRow(
 				cls: 'cc-props-folder',
 				value: prop.refBoardPath ?? '',
 			});
-			input.addEventListener('change', async () => {
-				prop.refBoardPath = input.value.trim() || undefined;
-				await opts.onChange();
+			input.addEventListener('change', () => {
+				void (async () => {
+					prop.refBoardPath = input.value.trim() || undefined;
+					await opts.onChange();
+				})();
 			});
 		}
 		if (opts.stat) {
@@ -569,9 +571,11 @@ export function renderColorRuleRow(
 		cls: 'cc-props-name cc-rule-name',
 		value: rule.name,
 	});
-	nameInput.addEventListener('change', async () => {
-		rule.name = nameInput.value;
-		await onChange();
+	nameInput.addEventListener('change', () => {
+		void (async () => {
+			rule.name = nameInput.value;
+			await onChange();
+		})();
 	});
 
 	renderKindToggle(header, rule, properties, onChange, () => {
@@ -626,18 +630,20 @@ function renderKindToggle(
 		const btn = seg.createEl('button', { text: label, cls: `cc-kind-btn cc-kind-${kind}` });
 		if ((rule.kind ?? 'condition') === kind) btn.addClass('is-active');
 		buttons.push(btn);
-		btn.addEventListener('click', async () => {
-			if ((rule.kind ?? 'condition') === kind) return;
-			rule.kind = kind;
-			if (kind === 'gradient' && (!rule.gradientValues || rule.gradientValues.length === 0)) {
-				seedGradientFromProperty(rule, properties);
-			}
-			// Highlight live: flip the is-active class immediately, then
-			// re-render the body for the new kind.
-			buttons.forEach(b => b.removeClass('is-active'));
-			btn.addClass('is-active');
-			await onChange();
-			refresh();
+		btn.addEventListener('click', () => {
+			void (async () => {
+				if ((rule.kind ?? 'condition') === kind) return;
+				rule.kind = kind;
+				if (kind === 'gradient' && (!rule.gradientValues || rule.gradientValues.length === 0)) {
+					seedGradientFromProperty(rule, properties);
+				}
+				// Highlight live: flip the is-active class immediately, then
+				// re-render the body for the new kind.
+				buttons.forEach(b => b.removeClass('is-active'));
+				btn.addClass('is-active');
+				await onChange();
+				refresh();
+			})();
 		});
 	}
 }
@@ -659,9 +665,11 @@ function renderConditionEditor(
 		columnSel
 			.addOptions(opts)
 			.setValue(rule.columnId)
-			.onChange(async (value) => {
-				rule.columnId = value;
-				await onChange();
+			.onChange((value) => {
+				void (async () => {
+					rule.columnId = value;
+					await onChange();
+				})();
 			});
 	} else {
 		const columnInput = line2.createEl('input', {
@@ -670,9 +678,11 @@ function renderConditionEditor(
 			cls: 'cc-rule-column',
 			value: rule.columnId,
 		});
-		columnInput.addEventListener('change', async () => {
-			rule.columnId = columnInput.value;
-			await onChange();
+		columnInput.addEventListener('change', () => {
+			void (async () => {
+				rule.columnId = columnInput.value;
+				await onChange();
+			})();
 		});
 	}
 
@@ -691,9 +701,11 @@ function renderConditionEditor(
 			is_not_empty: 'is not empty',
 		})
 		.setValue(rule.operator)
-		.onChange(async (value) => {
-			rule.operator = value as ColorRule['operator'];
-			await onChange();
+		.onChange((value) => {
+			void (async () => {
+				rule.operator = value as ColorRule['operator'];
+				await onChange();
+			})();
 		});
 
 	const valueInput = line2.createEl('input', {
@@ -702,9 +714,11 @@ function renderConditionEditor(
 		cls: 'cc-rule-value',
 		value: rule.value,
 	});
-	valueInput.addEventListener('change', async () => {
-		rule.value = valueInput.value;
-		await onChange();
+	valueInput.addEventListener('change', () => {
+		void (async () => {
+			rule.value = valueInput.value;
+			await onChange();
+		})();
 	});
 
 	const line3 = containerEl.createDiv({ cls: 'cc-props-line' });
@@ -763,11 +777,13 @@ function renderGradientEditor(
 		columnSel
 			.addOptions(opts)
 			.setValue(rule.columnId)
-			.onChange(async (value) => {
-				rule.columnId = value;
-				seedGradientFromProperty(rule, properties);
-				await onChange();
-				refresh();
+			.onChange((value) => {
+				void (async () => {
+					rule.columnId = value;
+					seedGradientFromProperty(rule, properties);
+					await onChange();
+					refresh();
+				})();
 			});
 	} else {
 		const columnInput = propLine.createEl('input', {
@@ -776,9 +792,11 @@ function renderGradientEditor(
 			cls: 'cc-rule-column',
 			value: rule.columnId,
 		});
-		columnInput.addEventListener('change', async () => {
-			rule.columnId = columnInput.value;
-			await onChange();
+		columnInput.addEventListener('change', () => {
+			void (async () => {
+				rule.columnId = columnInput.value;
+				await onChange();
+			})();
 		});
 	}
 
@@ -927,10 +945,12 @@ function renderPointValue(
 ): void {
 	const wrap = row.createDiv({ cls: 'cc-gradient-value' });
 	const input = wrap.createEl('input', { type: 'text', placeholder: 'value', cls: 'cc-rule-value', value: cfg.value });
-	input.addEventListener('change', async () => {
-		cfg.value = input.value.trim() || cfg.value;
-		await onChange();
-		refresh();
+	input.addEventListener('change', () => {
+		void (async () => {
+			cfg.value = input.value.trim() || cfg.value;
+			await onChange();
+			refresh();
+		})();
 	});
 }
 
@@ -997,20 +1017,22 @@ function renderColorLock(
 	});
 	setIcon(lockBtn, locked ? 'lock' : 'unlock');
 
-	lockBtn.addEventListener('click', async () => {
-		if (locked) {
-			// Unlock: default the override to the auto-picked color. Compute it
-			// BEFORE flipping cfg.auto, since colorAt() treats an unlocked value
-			// with a stored color as an override.
-			const autoColor = getAutoColor();
-			if (autoKey === 'auto') { cfg.auto = false; cfg.color = autoColor; }
-			else { cfg.autoText = false; cfg.textColor = autoColor; }
-		} else {
-			if (autoKey === 'auto') cfg.auto = true; else cfg.autoText = true;
-		}
-		renderColorLock(cell, key, autoKey, cfg, onChange, updateSwatch, getAutoColor, autoCircles);
-		updateSwatch();
-		await onChange();
+	lockBtn.addEventListener('click', () => {
+		void (async () => {
+			if (locked) {
+				// Unlock: default the override to the auto-picked color. Compute it
+				// BEFORE flipping cfg.auto, since colorAt() treats an unlocked value
+				// with a stored color as an override.
+				const autoColor = getAutoColor();
+				if (autoKey === 'auto') { cfg.auto = false; cfg.color = autoColor; }
+				else { cfg.autoText = false; cfg.textColor = autoColor; }
+			} else {
+				if (autoKey === 'auto') cfg.auto = true; else cfg.autoText = true;
+			}
+			renderColorLock(cell, key, autoKey, cfg, onChange, updateSwatch, getAutoColor, autoCircles);
+			updateSwatch();
+			await onChange();
+		})();
 	});
 }
 

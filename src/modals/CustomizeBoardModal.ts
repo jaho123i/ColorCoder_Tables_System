@@ -107,9 +107,12 @@ export class CustomizeBoardModal extends Modal {
 			if (id === lastTab && now - lastSwitch < 350) return;
 			lastTab = id;
 			lastSwitch = now;
-			this.activeTab = id as 'general' | 'view' | 'properties' | 'colors';
-			renderTabs();
-			showPane();
+			const validTabs = ['general', 'view', 'properties', 'colors'] as const;
+			if (validTabs.includes(id as typeof validTabs[number])) {
+				this.activeTab = id as 'general' | 'view' | 'properties' | 'colors';
+				renderTabs();
+				showPane();
+			}
 		};
 		const onTabEvent = (e: Event) => {
 			const btn = (e.target instanceof HTMLElement ? e.target.closest('.cc-settings-tab') : null) as HTMLElement | null;
@@ -605,48 +608,50 @@ onRemove: (prop) => {
 			`Rename ${label} field`,
 			`New frontmatter key for the ${label.toLowerCase()} timestamp.`,
 			currentName,
-			async (newName) => {
-				if (!newName || newName === currentName) return;
-				// Warn (with a user action) when the new name collides with an
-				// existing property — including one created or renamed earlier in
-				// this same session — or with the other auto field.
-				const otherAuto = kind === 'createdAt' ? stagedBoard.updatedAtFieldName : stagedBoard.createdAtFieldName;
-				const collides = schema.some(p => (p.name ?? p.id) === newName) || newName === otherAuto;
-				if (collides) {
-					const proceed = await new Promise<boolean>(resolve => {
+			(newName) => {
+				void (async () => {
+					if (!newName || newName === currentName) return;
+					// Warn (with a user action) when the new name collides with an
+					// existing property — including one created or renamed earlier in
+					// this same session — or with the other auto field.
+					const otherAuto = kind === 'createdAt' ? stagedBoard.updatedAtFieldName : stagedBoard.createdAtFieldName;
+					const collides = schema.some(p => (p.name ?? p.id) === newName) || newName === otherAuto;
+					if (collides) {
+						const proceed = await new Promise<boolean>(resolve => {
+							new ConfirmModal(
+								this.app,
+								'Duplicate field name',
+								`Another property is already named "${newName}". Two properties with the same name can be confusing. Use it anyway?`,
+								() => resolve(true),
+								'Use anyway',
+								() => resolve(false),
+								true
+							).open();
+						});
+						if (!proceed) return;
+					}
+					const ok = await new Promise<boolean>(resolve => {
 						new ConfirmModal(
 							this.app,
-							'Duplicate field name',
-							`Another property is already named "${newName}". Two properties with the same name can be confusing. Use it anyway?`,
+							'Rename field',
+							`All existing "${currentName}" values in this board will be renamed to "${newName}", and new tasks will use it. Continue?`,
 							() => resolve(true),
-							'Use anyway',
-							() => resolve(false),
-							true
+							'Rename',
+							() => resolve(false)
 						).open();
 					});
-					if (!proceed) return;
-				}
-				const ok = await new Promise<boolean>(resolve => {
-					new ConfirmModal(
-						this.app,
-						'Rename field',
-						`All existing "${currentName}" values in this board will be renamed to "${newName}", and new tasks will use it. Continue?`,
-						() => resolve(true),
-						'Rename',
-						() => resolve(false)
-					).open();
-				});
-				if (!ok) return;
-				if (kind === 'createdAt') stagedBoard.createdAtFieldName = newName;
-				else stagedBoard.updatedAtFieldName = newName;
-				// Gather repeated renames of the same field into one pending entry
-				// (keep the first old name, update to the latest new name) so the
-				// Apply summary shows a single line instead of one per rename.
-				const existing = this.pendingRenames.find(r => r.kind === kind);
-				if (existing) existing.newName = newName;
-				else this.pendingRenames.push({ kind, oldName: currentName, newName });
-				this.markDirty();
-				refresh();
+					if (!ok) return;
+					if (kind === 'createdAt') stagedBoard.createdAtFieldName = newName;
+					else stagedBoard.updatedAtFieldName = newName;
+					// Gather repeated renames of the same field into one pending entry
+					// (keep the first old name, update to the latest new name) so the
+					// Apply summary shows a single line instead of one per rename.
+					const existing = this.pendingRenames.find(r => r.kind === kind);
+					if (existing) existing.newName = newName;
+					else this.pendingRenames.push({ kind, oldName: currentName, newName });
+					this.markDirty();
+					refresh();
+				})();
 			}
 		).open();
 	}

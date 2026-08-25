@@ -78,8 +78,8 @@ export class ColorCoderManager {
 		const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder | null;
 		if (!folder || !folder.children) return null;
 		const board = folder.children.find(
-			(child: { extension?: string; path?: string }) => child.extension === 'md' && this.isBoardFile(child as TFile)
-		) as TFile | undefined;
+			(child): child is TFile => child instanceof TFile && child.extension === 'md' && this.isBoardFile(child)
+		);
 		return board ?? null;
 	}
 
@@ -114,7 +114,7 @@ export class ColorCoderManager {
 			colorRules: (this.settings?.colorRules ?? []).map(r => ({ ...r })),
 		};
 		const content = serializeBoardConfig(config);
-		return this.app.vault.create(filePath, content) as Promise<TFile>;
+		return this.app.vault.create(filePath, content);
 	}
 
 	/** Rename the board's database file (Customize → General). The file name IS

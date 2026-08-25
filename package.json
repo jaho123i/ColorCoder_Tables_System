@@ -1,6 +1,6 @@
 {
   "name": "colorcoder-tables",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "2D Kanban/Swimlane task board for Obsidian with Task-as-File architecture",
   "main": "main.js",
   "type": "module",

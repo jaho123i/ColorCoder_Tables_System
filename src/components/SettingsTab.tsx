@@ -1,6 +1,6 @@
-import { App, PluginSettingTab, Notice, Setting } from 'obsidian';
+import { App, PluginSettingTab, Notice, Setting, SettingDefinition } from 'obsidian';
 import { ColumnSchema } from '../types/index';
-import { renderColorRulesTab, renderPropertiesTab, renderGeneralTab, preserveScroll } from './shared/property-ui';
+import { renderColorRulesTab, renderPropertiesTab, renderGeneralTab } from './shared/property-ui';
 import { PromptModal } from '../modals/PromptModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import ColorCoderPlugin from '../main';
@@ -25,22 +25,21 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		// Preserve scroll position across re-renders (e.g. adding a rule),
-		// so the page doesn't jump back to the top. A render error in one tab
-		// must not block switching to the others.
-		preserveScroll(containerEl, () => {
-			containerEl.empty();
-			try {
-				this.renderBody(containerEl);
-			} catch (err) {
-				containerEl.createDiv({ text: `Settings error: ${(err as Error)?.message ?? err}`, cls: 'setting-item-description' });
-			}
-		});
+	// Declarative settings API (Obsidian 1.13+) — this plugin uses a complex
+	// tabbed UI with dynamic content, so we return an empty definition list
+	// and rely on the imperative display() method for rendering.
+	getSettingDefinitions(): SettingDefinition[] {
+		return [];
 	}
 
-	private renderBody(containerEl: HTMLElement): void {
+	// Use update() instead of display() for Obsidian 1.13+ compatibility.
+	// This delegates to display() for our imperative tabbed UI.
+	update(): void {
+		this.display();
+	}
+
+	display(): void {
+		const { containerEl } = this;
 		new Setting(containerEl).setName('Tables').setHeading();
 
 		// ── Submenu tab bar ─────────────────────────────────────
@@ -54,7 +53,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 			if (suffix) btn.createSpan({ text: suffix, cls: 'cc-tab-suffix' });
 			btn.addEventListener('click', () => {
 				this.activeTab = id;
-				this.display();
+				this.update();
 			});
 		};
 		renderTabButton('general', 'General', '(default)');
@@ -111,54 +110,56 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 			`Rename ${label} field`,
 			`New frontmatter key for the ${label.toLowerCase()} timestamp.`,
 			currentName,
-			async (newName): Promise<void> => {
-				if (!newName || newName === currentName) return;
-				// Warn (with a user action) when the new name collides with an
-				// existing property or with the other auto field.
-				const schema = this.plugin.settings?.defaultBoardConfig?.schema ?? [];
-				const otherAuto = kind === 'createdAt'
-					? (this.plugin.settings?.updatedAtFieldName ?? 'Updated At')
-					: (this.plugin.settings?.createdAtFieldName ?? 'Created At');
-				const collides = schema.some((p: ColumnSchema) => (p.name ?? p.id) === newName) || newName === otherAuto;
-				if (collides) {
-					const proceed = await new Promise<boolean>(resolve => {
+			(newName) => {
+				void (async () => {
+					if (!newName || newName === currentName) return;
+					// Warn (with a user action) when the new name collides with an
+					// existing property or with the other auto field.
+					const schema = this.plugin.settings?.defaultBoardConfig?.schema ?? [];
+					const otherAuto = kind === 'createdAt'
+						? (this.plugin.settings?.updatedAtFieldName ?? 'Updated At')
+						: (this.plugin.settings?.createdAtFieldName ?? 'Created At');
+					const collides = schema.some((p: ColumnSchema) => (p.name ?? p.id) === newName) || newName === otherAuto;
+					if (collides) {
+						const proceed = await new Promise<boolean>(resolve => {
+							new ConfirmModal(
+								this.app,
+								'Duplicate field name',
+								`Another property is already named "${newName}". Two properties with the same name can be confusing. Use it anyway?`,
+								() => resolve(true),
+								'Use anyway',
+								() => resolve(false),
+								true
+							).open();
+						});
+						if (!proceed) return;
+					}
+					const ok = await new Promise<boolean>(resolve => {
 						new ConfirmModal(
 							this.app,
-							'Duplicate field name',
-							`Another property is already named "${newName}". Two properties with the same name can be confusing. Use it anyway?`,
+							'Rename field',
+							`New tasks will stamp the ${label.toLowerCase()} timestamp under "${newName}" instead of "${currentName}". Existing files are not changed. Continue?`,
 							() => resolve(true),
-							'Use anyway',
-							() => resolve(false),
-							true
+							'Rename',
+							() => resolve(false)
 						).open();
 					});
-					if (!proceed) return;
-				}
-				const ok = await new Promise<boolean>(resolve => {
-					new ConfirmModal(
-						this.app,
-						'Rename field',
-						`New tasks will stamp the ${label.toLowerCase()} timestamp under "${newName}" instead of "${currentName}". Existing files are not changed. Continue?`,
-						() => resolve(true),
-						'Rename',
-						() => resolve(false)
-					).open();
-				});
-				if (!ok) return;
-				if (kind === 'updatedAt') {
-					this.plugin.settings.updatedAtFieldName = newName;
-					const schema = this.plugin.settings?.defaultBoardConfig?.schema ?? [];
-					const lastEdit = schema.find((p: ColumnSchema) => p.type === 'lastEdit');
-					if (lastEdit) {
-						lastEdit.id = newName;
-						lastEdit.fieldName = newName;
+					if (!ok) return;
+					if (kind === 'updatedAt') {
+						this.plugin.settings.updatedAtFieldName = newName;
+						const schema = this.plugin.settings?.defaultBoardConfig?.schema ?? [];
+						const lastEdit = schema.find((p: ColumnSchema) => p.type === 'lastEdit');
+						if (lastEdit) {
+							lastEdit.id = newName;
+							lastEdit.fieldName = newName;
+						}
+					} else {
+						this.plugin.settings.createdAtFieldName = newName;
 					}
-				} else {
-					this.plugin.settings.createdAtFieldName = newName;
-				}
-				await this.plugin.saveSettings();
-				new Notice(`"${currentName}" renamed to "${newName}" for new tasks`);
-				this.display();
+					await this.plugin.saveSettings();
+					new Notice(`"${currentName}" renamed to "${newName}" for new tasks`);
+					this.update();
+				})();
 			}
 		).open();
 	}
@@ -178,7 +179,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 				onToggleHide: (prop) => {
 					prop.excluded = !prop.excluded;
 					void this.plugin.saveSettings();
-					this.display();
+					this.update();
 				},
 				onRemove: (prop) => {
 					this.plugin.settings.defaultBoardConfig.schema =
@@ -191,7 +192,7 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 					];
 					void this.plugin.saveSettings();
 					void manager?.deletePropertyVaultWide(prop.id);
-					this.display();
+					this.update();
 				},
 				onAdd: () => {
 					const newProp: ColumnSchema = {
@@ -200,9 +201,9 @@ export class ColorCoderSettingTab extends PluginSettingTab {
 					};
 					this.plugin.settings.defaultBoardConfig.schema.push(newProp);
 					void this.plugin.saveSettings();
-					this.display();
+					this.update();
 				},
-				refresh: () => this.display(),
+				refresh: () => this.update(),
 				autoFields: {
 					createdAt: {
 						enabled: this.plugin.settings?.autoUpdateCreatedAt !== false,
@@ -280,11 +281,13 @@ const adoptedType: ColumnSchema['type'] =
 				this.app,
 				'Apply to ALL boards?',
 				`Override ${count} board${count === 1 ? '' : 's'} with these plugin defaults (schema, view, per-board settings and color rules)? Their current settings will be lost.`,
-				async (): Promise<void> => {
-					const n = await this.plugin.manager?.applyDefaultsToAllBoards();
-					await this.plugin.saveSettings();
-					this.plugin.refreshAllBoards?.();
-					new Notice(`Applied to ${n ?? 0} board${n === 1 ? '' : 's'}`);
+				() => {
+					void (async () => {
+						const n = await this.plugin.manager?.applyDefaultsToAllBoards();
+						await this.plugin.saveSettings();
+						this.plugin.refreshAllBoards?.();
+						new Notice(`Applied to ${n ?? 0} board${n === 1 ? '' : 's'}`);
+					})();
 				},
 				'Apply',
 				undefined,
@@ -302,7 +305,7 @@ const adoptedType: ColumnSchema['type'] =
 			rules: settings?.colorRules ?? [],
 			properties: settings?.defaultBoardConfig?.schema ?? [],
 			onChange: () => this.plugin.saveSettings(),
-			refresh: () => this.display(),
+			refresh: () => this.update(),
 			seedDefaults: true,
 			description: 'Default color rules for NEW boards (existing boards keep their own rules). Cards are colored by the first matching rule (highest priority first). The built-in priority defaults below are the source of the Priority color coding — they are used until you edit, remove, or add your own rules.',
 		});

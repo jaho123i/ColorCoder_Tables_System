@@ -3,6 +3,42 @@ import { serializeBoardConfig, deserializeBoardConfig, ColorCoderManager } from 
 import { DEFAULT_BOARD_CONFIG, BoardConfig, ViewConfig } from '../types/index';
 import { TaskFileSchema } from '../types/task-schema';
 
+class MockTFile {
+	path: string;
+	name: string;
+	extension: string;
+	parent: MockTFolder | null;
+
+	constructor(path: string) {
+		this.path = path;
+		this.name = path.split('/').pop() || '';
+		this.extension = this.name.split('.').pop() || '';
+		this.parent = null;
+	}
+}
+
+class MockTFolder {
+	path: string;
+	name: string;
+	parent: MockTFolder | null;
+	children: (MockTFile | MockTFolder)[];
+
+	constructor(path: string) {
+		this.path = path;
+		this.name = path.split('/').pop() || '';
+		this.parent = null;
+		this.children = [];
+	}
+}
+
+// Make instanceof work for our mock classes
+Object.defineProperty(MockTFile, Symbol.hasInstance, {
+	value: (instance: unknown) => instance instanceof MockTFile,
+});
+Object.defineProperty(MockTFolder, Symbol.hasInstance, {
+	value: (instance: unknown) => instance instanceof MockTFolder,
+});
+
 const mockVault = (content: string) => ({
 	cachedRead: () => Promise.resolve(content),
 });
@@ -206,13 +242,15 @@ describe('getAvailableProperties', () => {
 
 describe('getTasksForBoard', () => {
 	it('excludes the board file itself from the task list', async () => {
-		const board = { path: 'folder/MyBoard.md', name: 'MyBoard.md', basename: 'MyBoard', parent: { path: 'folder' }, extension: 'md' };
-		const taskFile = { path: 'folder/task.md', name: 'task.md', basename: 'task', parent: { path: 'folder' }, extension: 'md' };
+		const board = new MockTFile('folder/MyBoard.md');
+		const taskFile = new MockTFile('folder/task.md');
 		const boardContent = '---\nccBoard: true\nschema: []\nviews: []\npageSize: 30\ncardFontSize: 18\n---\n';
+		const folder = new MockTFolder('folder');
+		folder.children = [taskFile, board];
 		const vault = {
 			cachedRead: (f: any) => Promise.resolve(f === board ? boardContent : '---\nStatus: To do\n---\n'),
 			getAbstractFileByPath: (p: string) =>
-				p === 'folder' ? { children: [taskFile, board] }
+				p === 'folder' ? folder
 				: p === 'folder/task.md' ? taskFile
 				: p === 'folder/MyBoard.md' ? board
 				: null,
@@ -223,7 +261,7 @@ describe('getTasksForBoard', () => {
 			defaultBoardConfig: { schema: [], views: [] },
 		} as any);
 
-		const result = await manager.getTasksForBoard(board as any);
+		const result = await manager.getTasksForBoard(board);
 
 		expect(result.success).toBe(true);
 		expect(result.data?.length).toBe(1);
@@ -231,14 +269,16 @@ describe('getTasksForBoard', () => {
 	});
 
 	it('excludes every board file in the folder, not just the current one', async () => {
-		const board = { path: 'folder/MyBoard.md', name: 'MyBoard.md', basename: 'MyBoard', parent: { path: 'folder' }, extension: 'md' };
-		const otherBoard = { path: 'folder/Other-board.md', name: 'Other-board.md', basename: 'Other-board', parent: { path: 'folder' }, extension: 'md' };
-		const taskFile = { path: 'folder/task.md', name: 'task.md', basename: 'task', parent: { path: 'folder' }, extension: 'md' };
+		const board = new MockTFile('folder/MyBoard.md');
+		const otherBoard = new MockTFile('folder/Other-board.md');
+		const taskFile = new MockTFile('folder/task.md');
 		const boardContent = '---\nccBoard: true\nschema: []\nviews: []\ncolorRules: []\n---\n';
+		const folder = new MockTFolder('folder');
+		folder.children = [taskFile, board, otherBoard];
 		const vault = {
 			cachedRead: (f: any) => Promise.resolve(f === board || f === otherBoard ? boardContent : '---\nStatus: To do\n---\n'),
 			getAbstractFileByPath: (p: string) =>
-				p === 'folder' ? { children: [taskFile, board, otherBoard] }
+				p === 'folder' ? folder
 				: p === 'folder/task.md' ? taskFile
 				: p === 'folder/MyBoard.md' ? board
 				: p === 'folder/Other-board.md' ? otherBoard
@@ -250,7 +290,7 @@ describe('getTasksForBoard', () => {
 			defaultBoardConfig: { schema: [], views: [] },
 		} as any);
 
-		const result = await manager.getTasksForBoard(board as any);
+		const result = await manager.getTasksForBoard(board);
 
 		expect(result.success).toBe(true);
 		expect(result.data?.length).toBe(1);

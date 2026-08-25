@@ -61,11 +61,13 @@ export class FolderPickerModal extends Modal {
 
 /** Convenience: open the folder picker for board creation. */
 export function openCreateBoardPicker(app: App, createBoard: (folderPath: string) => Promise<void>): void {
-	new FolderPickerModal(app, 'Create ColorCoder board in…', async folderPath => {
-		try {
-			await createBoard(folderPath);
-		} catch (e) {
-			new Notice(String(e));
-		}
+	new FolderPickerModal(app, 'Create ColorCoder board in…', folderPath => {
+		void (async () => {
+			try {
+				await createBoard(folderPath);
+			} catch (e) {
+				new Notice(String(e));
+			}
+		})();
 	}).open();
 }

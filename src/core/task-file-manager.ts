@@ -3,46 +3,6 @@ import { TaskFileSchema, TaskFileFrontmatter } from '../types/task-schema';
 import { InlineFieldMeta } from '../types/index';
 import { PluginSettings } from '../types/plugin-settings';
 
-interface ObsidianFile {
-	path: string;
-	name: string;
-	extension: string;
-	parent: ObsidianFolder | null;
-}
-
-interface ObsidianFolder {
-	path: string;
-	name: string;
-	parent: ObsidianFolder | null;
-	children: (ObsidianFile | ObsidianFolder)[];
-}
-
-function isFile(file: unknown): file is ObsidianFile {
-	return (
-		typeof file === 'object' &&
-		file !== null &&
-		'extension' in file &&
-		typeof (file as Record<string, unknown>).extension === 'string'
-	);
-}
-
-function isFolder(folder: unknown): folder is ObsidianFolder {
-	return (
-		typeof folder === 'object' &&
-		folder !== null &&
-		'children' in folder &&
-		Array.isArray((folder as Record<string, unknown>).children)
-	);
-}
-
-function toTFile(file: ObsidianFile): TFile {
-	return file as unknown as TFile;
-}
-
-function toTFolder(folder: ObsidianFolder): TFolder {
-	return folder as unknown as TFolder;
-}
-
 export interface Result<T, E = Error> {
 	success: boolean;
 	data?: T;
@@ -300,10 +260,10 @@ export class TaskFileManager {
 		this.vault = deps.app.vault;
 	}
 
-	async createTask(folderPath: string, initialData: Partial<TaskFileFrontmatter>, opts?: { fileName?: string }, fieldNames?: FieldNames): Promise<Result<ObsidianFile>> {
+	async createTask(folderPath: string, initialData: Partial<TaskFileFrontmatter>, opts?: { fileName?: string }, fieldNames?: FieldNames): Promise<Result<TFile>> {
 		try {
 			const folder = this.app.vault.getAbstractFileByPath(folderPath);
-			if (!folder || !isFolder(folder)) {
+			if (!folder || !(folder instanceof TFolder)) {
 				return { success: false, error: new Error(`Folder not found: ${folderPath}`) };
 			}
 
@@ -336,7 +296,7 @@ export class TaskFileManager {
 			const content = createTaskFileContent(frontmatter as TaskFileFrontmatter);
 
 			const file = await this.vault.create(filePath, content);
-			return { success: true, data: file as unknown as ObsidianFile };
+			return { success: true, data: file };
 		} catch (error) {
 			return { success: false, error: error as Error };
 		}
@@ -345,11 +305,11 @@ export class TaskFileManager {
 	async readTask(filePath: string, typeMap?: Record<string, string>, fieldNames?: FieldNames): Promise<Result<TaskFileSchema>> {
 		try {
 			const file = this.app.vault.getAbstractFileByPath(filePath);
-			if (!file || !isFile(file)) {
+			if (!file || !(file instanceof TFile)) {
 				return { success: false, error: new Error(`File not found: ${filePath}`) };
 			}
 
-			const content = await this.vault.read(toTFile(file));
+			const content = await this.vault.read(file);
 			const parseResult = parseFrontmatter(content, typeMap);
 
 			if (!isSuccess(parseResult)) {
@@ -394,14 +354,14 @@ export class TaskFileManager {
 		}
 	}
 
-	async updateTask(filePath: string, updates: Partial<TaskFileFrontmatter>, fieldNames?: FieldNames): Promise<Result<ObsidianFile>> {
+	async updateTask(filePath: string, updates: Partial<TaskFileFrontmatter>, fieldNames?: FieldNames): Promise<Result<TFile>> {
 		try {
 			const file = this.app.vault.getAbstractFileByPath(filePath);
-			if (!file || !isFile(file)) {
+			if (!file || !(file instanceof TFile)) {
 				return { success: false, error: new Error(`File not found: ${filePath}`) };
 			}
 
-			const content = await this.vault.read(toTFile(file));
+			const content = await this.vault.read(file);
 			const parseResult = parseFrontmatter(content);
 
 			if (!isSuccess(parseResult)) {
@@ -421,7 +381,7 @@ export class TaskFileManager {
 				});
 
 			const newContent = createTaskFileContent(mergedFrontmatter, body);
-			await this.vault.modify(toTFile(file), newContent);
+			await this.vault.modify(file, newContent);
 
 			return { success: true, data: file };
 		} catch (error) {
@@ -432,11 +392,11 @@ export class TaskFileManager {
 	async deleteTask(filePath: string): Promise<Result<void>> {
 		try {
 			const file = this.app.vault.getAbstractFileByPath(filePath);
-			if (!file || !isFile(file)) {
+			if (!file || !(file instanceof TFile)) {
 				return { success: false, error: new Error(`File not found: ${filePath}`) };
 			}
 
-			await this.app.fileManager.trashFile(toTFile(file));
+			await this.app.fileManager.trashFile(file);
 			return { success: true, data: undefined };
 		} catch (error) {
 			return { success: false, error: error as Error };
@@ -499,9 +459,9 @@ export class TaskFileManager {
 	async deletePropertyValues(folderPath: string, propertyId: string): Promise<Result<number>> {
 		try {
 			const folder = this.app.vault.getAbstractFileByPath(folderPath);
-			if (!folder || !isFolder(folder)) return { success: true, data: 0 };
+			if (!folder || !(folder instanceof TFolder)) return { success: true, data: 0 };
 			const configDir = this.vault.configDir;
-			const files = this.collectMarkdownFiles(toTFolder(folder), true)
+			const files = this.collectMarkdownFiles(folder, true)
 				.filter(f => !f.path.includes(configDir));
 			let removed = 0;
 			for (const file of files) {
@@ -529,11 +489,11 @@ export class TaskFileManager {
 	): Promise<Result<TaskFileSchema[]>> {
 		try {
 			const folder = this.app.vault.getAbstractFileByPath(folderPath);
-			if (!folder || !isFolder(folder)) {
+			if (!folder || !(folder instanceof TFolder)) {
 				return { success: false, error: new Error(`Folder not found: ${folderPath}`) };
 			}
 
-			const files = this.collectMarkdownFiles(toTFolder(folder), includeSubfolders);
+			const files = this.collectMarkdownFiles(folder, includeSubfolders);
 			const tasks: TaskFileSchema[] = [];
 
 			for (const file of files) {
@@ -552,10 +512,10 @@ export class TaskFileManager {
 	private collectMarkdownFiles(folder: TFolder, includeSubfolders: boolean): TFile[] {
 		const files: TFile[] = [];
 		for (const child of folder.children) {
-			if (isFile(child) && child.extension === 'md') {
-				files.push(toTFile(child));
-			} else if (includeSubfolders && isFolder(child)) {
-				files.push(...this.collectMarkdownFiles(toTFolder(child), includeSubfolders));
+			if (child instanceof TFile && child.extension === 'md') {
+				files.push(child);
+			} else if (includeSubfolders && child instanceof TFolder) {
+				files.push(...this.collectMarkdownFiles(child, includeSubfolders));
 			}
 		}
 		return files;

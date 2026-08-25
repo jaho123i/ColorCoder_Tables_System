@@ -190,14 +190,16 @@ export class QuickAddModal extends Modal {
 							this.app,
 							'Task already exists',
 							`A file named "${base}.md" already exists in this folder. Create "${proposed}" instead?`,
-							async () => {
-								const retry = await this.manager.createTask(folderPath, payload, { fileName: proposed }, this.boardFile);
-								if (retry.success) {
-									new Notice(`Task created as ${proposed}`);
-									this.close();
-								} else {
-									new Notice(`Failed to create task: ${retry.error?.message ?? 'unknown error'}`);
-								}
+							() => {
+								void (async () => {
+									const retry = await this.manager.createTask(folderPath, payload, { fileName: proposed }, this.boardFile);
+									if (retry.success) {
+										new Notice(`Task created as ${proposed}`);
+										this.close();
+									} else {
+										new Notice(`Failed to create task: ${retry.error?.message ?? 'unknown error'}`);
+									}
+								})();
 							},
 							'Create'
 						).open();

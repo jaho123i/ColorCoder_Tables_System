@@ -30,12 +30,22 @@ class MockTFolder {
 	}
 }
 
+// Make instanceof work for our mock classes
+Object.defineProperty(MockTFile, Symbol.hasInstance, {
+	value: (instance: unknown) => instance instanceof MockTFile,
+});
+Object.defineProperty(MockTFolder, Symbol.hasInstance, {
+	value: (instance: unknown) => instance instanceof MockTFolder,
+});
+
 const createMockApp = () => {
 	const vault = {
 		getAbstractFileByPath: vi.fn(),
 		read: vi.fn(),
 		create: vi.fn(),
 		modify: vi.fn(),
+		getMarkdownFiles: vi.fn(),
+		configDir: '.obsidian',
 	};
 	const fileManager = {
 		trashFile: vi.fn(),

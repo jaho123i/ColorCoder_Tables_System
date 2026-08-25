@@ -343,8 +343,9 @@ export class ColorCoderView extends View {
 					onCardClick: (task: TaskFileSchema) => void this.openTaskFile(task),
 					onBodyPreview: (task: TaskFileSchema) => void this.openBodyPreview(task),
 					onFieldClick: (task: TaskFileSchema, field: string) => void this.openFieldValue(task, field, config),
-					onMoveTask: async (taskFile: string, toColumnId: string, beforeTaskFile?: string | null, swimlaneId?: string): Promise<void> => {
-						if (!this.boardFile || !manager) return;
+					onMoveTask: (taskFile: string, toColumnId: string, beforeTaskFile?: string | null, swimlaneId?: string): void => {
+						void (async () => {
+							if (!this.boardFile || !manager) return;
 						// Column ids are `${groupByField}:${value}`; write the target
 						// value to the same field that produced the column.
 						let field = groupByColumnId;
@@ -420,9 +421,9 @@ export class ColorCoderView extends View {
 						}
 						// Re-render with updated local state.
 						this.renderBoard(this.currentConfig);
-					},
-			}
-		)
+					})();
+				},
+			})
 		)
 	);
 	}
