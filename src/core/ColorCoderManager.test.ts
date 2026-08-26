@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { serializeBoardConfig, deserializeBoardConfig, ColorCoderManager } from './ColorCoderManager';
 import { DEFAULT_BOARD_CONFIG, BoardConfig, ViewConfig } from '../types/index';
 import { TaskFileSchema } from '../types/task-schema';
+import { TFile } from 'obsidian';
 
 class MockTFile {
 	path: string;
@@ -261,7 +262,7 @@ describe('getTasksForBoard', () => {
 			defaultBoardConfig: { schema: [], views: [] },
 		} as any);
 
-		const result = await manager.getTasksForBoard(board);
+		const result = await manager.getTasksForBoard(board as unknown as TFile);
 
 		expect(result.success).toBe(true);
 		expect(result.data?.length).toBe(1);
@@ -290,7 +291,7 @@ describe('getTasksForBoard', () => {
 			defaultBoardConfig: { schema: [], views: [] },
 		} as any);
 
-		const result = await manager.getTasksForBoard(board);
+		const result = await manager.getTasksForBoard(board as unknown as TFile);
 
 		expect(result.success).toBe(true);
 		expect(result.data?.length).toBe(1);
